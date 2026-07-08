@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { LanguageSelector } from "./LanguageSelector"
+import { BackendHealthBadge } from "./BackendHealthBadge"
 import { Separator } from "./ui/separator"
 import { cn } from "@/lib/utils"
 
@@ -40,6 +41,8 @@ export function Header() {
                 {t("Bread Types")}
               </NavLink>
             </nav>
+
+            <BackendHealthBadge />
 
             <Separator orientation="vertical" className="h-6" />
 
