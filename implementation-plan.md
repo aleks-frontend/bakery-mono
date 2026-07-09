@@ -31,14 +31,14 @@ Existing `bakery-admin-panel` and `bakery-order-form` repos get fresh-copied int
 ## Phase 3 — Database Schema
 
 - [x] Prisma init, connect to Postgres (local, via a native Postgres install rather than Docker Compose since Docker isn't available on this machine — `bakery` role/database created manually, `/health` confirms live connectivity; Railway connection still pending)
-- [ ] Define `Article` model (`capacityPerCycle` nullable, `available`, pricing)
-- [ ] Define `Cycle` model (`label` as ISO week key, `status`: OPEN/CLOSED/COMPLETED, `orderWindowOpensAt`, `orderWindowClosesAt`, `deliveryDate`, `holidayMessage`)
-- [ ] Partial unique index/constraint: at most one `Cycle` with `status = OPEN`
-- [ ] Define `Order` model (recipient, phone, date, location, items, totalPrice, status, remark, `cycleId`, nullable `repeatingOrderId`)
-- [ ] Define `RepeatingOrder` model (recipient, phone, email, location, items, remark)
-- [ ] Wire in Better Auth's required tables via the Prisma adapter (`User`, `Session`, etc.)
-- [ ] Write initial migration
-- [ ] Seed script: sample articles, one open cycle, a few test orders
+- [x] Define `Article` model (`capacityPerCycle` nullable, `available`, pricing)
+- [x] Define `Cycle` model (`label` as ISO week key, `status`: OPEN/CLOSED/COMPLETED, `orderWindowOpensAt`, `orderWindowClosesAt`, `deliveryDate`, `holidayMessage`)
+- [x] Partial unique index/constraint: at most one `Cycle` with `status = OPEN` (hand-added to the migration SQL, since Prisma's schema language has no syntax for partial indexes — verified it actually rejects a second OPEN cycle)
+- [x] Define `Order` model (recipient, phone, location, items, totalPrice, status, remark, `cycleId`, nullable `repeatingOrderId` — dropped the separate `date` field from the old schema since `createdAt` already covers it) — plus a normalized `OrderItem` table (article + quantity + a snapshotted `unitPrice`) instead of the old denormalized "raw articles string"
+- [x] Define `RepeatingOrder` model (recipient, phone, email, location, remark) with its own `RepeatingOrderItem` table
+- [x] Wire in Better Auth's required tables via the Prisma adapter (`User`, `Session`, `Account`, `Verification` — generated via `@better-auth/cli generate` against a minimal `src/lib/auth.ts`, not hand-typed)
+- [x] Write initial migration
+- [x] Seed script: all 46 real articles from the old Google Sheet (the `CONFIG` row was excluded — that was the old sheet's hack for storing the global `acceptingOrders` flag, which `Cycle.status` replaces), 1 open cycle, 3 test orders with items — wired up via `prisma.config.ts`'s `migrations.seed` and runnable with `npm run prisma:seed -w @bakery/backend`
 
 ## Phase 4 — Authentication
 

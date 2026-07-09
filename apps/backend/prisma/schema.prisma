@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -5,4 +6,177 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// --- Domain models ---
+
+model Article {
+  id               String   @id @default(cuid())
+  name             String
+  price            Int
+  available        Boolean  @default(true)
+  capacityPerCycle Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  orderItems          OrderItem[]
+  repeatingOrderItems RepeatingOrderItem[]
+
+  @@map("articles")
+}
+
+enum CycleStatus {
+  OPEN
+  CLOSED
+  COMPLETED
+}
+
+model Cycle {
+  id                  String      @id @default(cuid())
+  label               String      @unique
+  status              CycleStatus @default(OPEN)
+  orderWindowOpensAt  DateTime
+  orderWindowClosesAt DateTime
+  deliveryDate        DateTime
+  holidayMessage      String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  orders Order[]
+
+  @@map("cycles")
+}
+
+enum OrderStatus {
+  NOT_RECEIVED
+  IN_PROGRESS
+  DELIVERED
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  recipient  String
+  phone      String
+  location   String
+  totalPrice Int
+  status     OrderStatus @default(NOT_RECEIVED)
+  remark     String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  cycleId String
+  cycle   Cycle  @relation(fields: [cycleId], references: [id])
+
+  repeatingOrderId String?
+  repeatingOrder   RepeatingOrder? @relation(fields: [repeatingOrderId], references: [id])
+
+  items OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  quantity  Int
+  unitPrice Int
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  articleId String
+  article   Article @relation(fields: [articleId], references: [id])
+
+  @@map("order_items")
+}
+
+model RepeatingOrder {
+  id        String   @id @default(cuid())
+  recipient String
+  phone     String
+  email     String?
+  location  String
+  remark    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items  RepeatingOrderItem[]
+  orders Order[]
+
+  @@map("repeating_orders")
+}
+
+model RepeatingOrderItem {
+  id       String @id @default(cuid())
+  quantity Int
+
+  repeatingOrderId String
+  repeatingOrder   RepeatingOrder @relation(fields: [repeatingOrderId], references: [id], onDelete: Cascade)
+
+  articleId String
+  article   Article @relation(fields: [articleId], references: [id])
+
+  @@map("repeating_order_items")
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
 }
