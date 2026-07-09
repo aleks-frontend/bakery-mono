@@ -38,12 +38,16 @@ Everything else originally in this phase (Dockerfiles, Railway project setup) ha
 
 ## Phase 4 — Authentication
 
-- [ ] Configure Better Auth with `prismaAdapter` (postgresql provider)
+- [ ] Configure Better Auth with `prismaAdapter` (postgresql provider) and database sessions
 - [ ] Mount `toNodeHandler(auth)` at `/api/auth/*` in Express
-- [ ] Create the single admin account (seed or one-off script)
-- [ ] Admin panel: login page + session handling via `packages/api-client`
-- [ ] Express middleware protecting all non-auth, non-public routes
+- [ ] Set `TRUSTED_ORIGINS` (admin panel's `localhost:5173` origin, plus its future real domain) — needed now, not just at deploy time, since the admin panel and backend are already different origins in local dev
+- [ ] **Explicitly disable public sign-up** — Better Auth's email/password setup exposes a public sign-up endpoint by default; since there's only ever one admin account, this must be locked down or anyone who finds the API could register their own account
+- [ ] Seed script creates the single admin account, reading its email/password from env vars (not hardcoded)
+- [ ] `requireAuth` Express middleware: calls `auth.api.getSession` (via `fromNodeHeaders`), rejects with 401 if no session, otherwise attaches `req.user`/`req.session` and calls `next()` — applied to all non-auth, non-public routes
+- [ ] Admin panel: login page (using existing shadcn/ui components already in the repo) + session handling via `packages/api-client`
+- [ ] After login: redirect to the order list, show the logged-in user's name in the header, add a sign-out button
 - [ ] Confirm logout + session expiry behavior
+- [ ] Security review pass focused specifically on the new authentication/authorization code before considering this phase done
 
 ## Phase 5 — Core Backend API: Articles
 
