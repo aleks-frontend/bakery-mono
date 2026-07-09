@@ -40,4 +40,4 @@ coverage/
 .eslintcache
 
 # Prisma
-apps/backend/prisma/generated/
+apps/backend/src/generated/

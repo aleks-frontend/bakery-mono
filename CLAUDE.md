@@ -36,7 +36,9 @@ npm run <script> -w @bakery/<name> # run a script in one workspace directly,
                                     # e.g. npm run build -w @bakery/schemas
 ```
 
-`docker-compose.yml` at the root runs Postgres + the backend for local dev (`docker compose up`). No test runner is configured yet (Vitest/Supertest are planned per `tech-stack.md` but not yet scaffolded).
+`docker-compose.yml` at the root runs Postgres + the backend for local dev (`docker compose up`) — untested on this machine since Docker isn't installed here; local dev currently uses a native Postgres install instead (see `apps/backend/.env` for the `DATABASE_URL`). No test runner is configured yet (Vitest/Supertest are planned per `tech-stack.md` but not yet scaffolded).
+
+**Prisma**: schema lives at `apps/backend/prisma/schema.prisma`, config at `apps/backend/prisma.config.ts`. Prisma 7 generates the client into `apps/backend/src/generated/prisma` (gitignored, regenerated via the `postinstall` script) rather than `node_modules/@prisma/client`, and requires a driver adapter (`@prisma/adapter-pg`) passed to `new PrismaClient({ adapter })` — see `src/lib/prisma.ts`. Run migrations with `npm run prisma:migrate -w @bakery/backend`.
 
 ## Architecture
 
@@ -46,7 +48,7 @@ npm run <script> -w @bakery/<name> # run a script in one workspace directly,
 |---|---|---|
 | `apps/admin-panel` | React 18 + Vite admin SPA (`@bakery/admin-panel`) | Fresh-copied from the standalone `bakery-admin-panel` repo; still reads/writes via the old n8n webhook URLs (see its own `apps/admin-panel/CLAUDE.md`) |
 | `apps/order-form` | React 18 + Vite public order form (`@bakery/order-form`) | Fresh-copied from the standalone `bakery-order-form` repo; same n8n dependency for now |
-| `apps/backend` | Express 5 + TypeScript API (`@bakery/backend`), ESM, run via `tsx` | Currently a skeleton: CORS + JSON middleware and a `/health` liveness check. No DB/Prisma/auth wired in yet |
+| `apps/backend` | Express 5 + TypeScript API (`@bakery/backend`), ESM, run via `tsx` | CORS + JSON middleware, `/health` (now checks live DB connectivity via Prisma), and a working Prisma + Postgres connection (`src/lib/prisma.ts`, driver-adapter based per Prisma 7 — see `prisma/schema.prisma`). No domain models or auth wired in yet |
 | `packages/schemas` | Shared Zod schemas (`@bakery/schemas`) | Placeholder only — will hold `Order`/`Article`/`Cycle`/`RepeatingOrder` schemas once modeled, consumed by all three apps |
 | `packages/api-client` | Shared TanStack Query hooks/mutations (`@bakery/api-client`) | Placeholder only — will replace each frontend's hand-rolled n8n fetch hooks once the backend has real endpoints |
 

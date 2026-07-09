@@ -8,29 +8,29 @@ Existing `bakery-admin-panel` and `bakery-order-form` repos get fresh-copied int
 
 ## Phase 1 — Project Setup
 
-- [ ] Initialize npm workspaces monorepo (`apps/`, `packages/`)
-- [ ] Fresh-copy `bakery-admin-panel` into `apps/admin-panel`
-- [ ] Fresh-copy `bakery-order-form` into `apps/order-form`
-- [ ] Scaffold `apps/backend` (Node + Express + TypeScript)
-- [ ] Create `packages/schemas` (empty Zod schema package, wired into all three apps via workspace deps)
-- [ ] Create `packages/api-client` (empty TanStack Query package, wired into both frontends)
-- [ ] Shared ESLint + Prettier config at repo root; each app extends it
-- [ ] `docker-compose.yml` for local dev (Postgres container + backend)
-- [ ] `.env.example` files for each app documenting required env vars
+- [x] Initialize npm workspaces monorepo (`apps/`, `packages/`)
+- [x] Fresh-copy `bakery-admin-panel` into `apps/admin-panel`
+- [x] Fresh-copy `bakery-order-form` into `apps/order-form`
+- [x] Scaffold `apps/backend` (Node + Express + TypeScript)
+- [x] Create `packages/schemas` (empty Zod schema package, wired into all three apps via workspace deps)
+- [x] Create `packages/api-client` (empty TanStack Query package, wired into both frontends)
+- [x] Shared ESLint + Prettier config at repo root; each app extends it
+- [x] `docker-compose.yml` for local dev (Postgres container + backend) — written, but untested since Docker isn't installed on this machine; local dev uses a native Postgres install instead for now
+- [x] `.env.example` files for each app documenting required env vars
 
 ## Phase 2 — Deploy Walking Skeleton
 
 - [ ] Dockerfile for `backend` (multi-stage build)
 - [ ] Dockerfiles for `admin-panel` and `order-form` (static build + serve)
 - [ ] Create Railway project with 3 services + Postgres addon
-- [ ] Backend exposes a `/health` endpoint that confirms DB connectivity
+- [x] Backend exposes a `/health` endpoint that confirms DB connectivity (implemented alongside the Prisma setup, ahead of the rest of this phase)
 - [ ] Confirm all three services build and deploy on Railway from the monorepo
 - [ ] Confirm env vars / secrets flow correctly from Railway into each service
 - [ ] Document the deploy process (even briefly) so it's repeatable
 
 ## Phase 3 — Database Schema
 
-- [ ] Prisma init, connect to Postgres (local via Docker Compose, Railway remotely)
+- [x] Prisma init, connect to Postgres (local, via a native Postgres install rather than Docker Compose since Docker isn't available on this machine — `bakery` role/database created manually, `/health` confirms live connectivity; Railway connection still pending)
 - [ ] Define `Article` model (`capacityPerCycle` nullable, `available`, pricing)
 - [ ] Define `Cycle` model (`label` as ISO week key, `status`: OPEN/CLOSED/COMPLETED, `orderWindowOpensAt`, `orderWindowClosesAt`, `deliveryDate`, `holidayMessage`)
 - [ ] Partial unique index/constraint: at most one `Cycle` with `status = OPEN`
