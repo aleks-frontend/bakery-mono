@@ -4,6 +4,8 @@ import express from "express";
 import { toNodeHandler } from "better-auth/node";
 import { auth, trustedOrigins } from "./lib/auth.js";
 import { prisma } from "./lib/prisma.js";
+import { articlesRouter } from "./routes/articles.js";
+import { publicRouter } from "./routes/public.js";
 
 const app = express();
 const port = process.env.PORT ?? 3001;
@@ -35,6 +37,9 @@ app.get("/health", async (_req, res) => {
     });
   }
 });
+
+app.use("/api/articles", articlesRouter);
+app.use("/api/public", publicRouter);
 
 app.listen(port, () => {
   console.log(`Backend listening on port ${port}`);

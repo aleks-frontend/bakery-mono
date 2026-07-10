@@ -51,10 +51,10 @@ Everything else originally in this phase (Dockerfiles, Railway project setup) ha
 
 ## Phase 5 — Core Backend API: Articles
 
-- [ ] CRUD endpoints for Article (create/update/delete/list)
-- [ ] Availability computation: `available && (capacityPerCycle == null || currentCycleOrderedQty < capacityPerCycle)`
-- [ ] Endpoint for the public order form: articles + `acceptingOrders` (derived from current cycle status) + reopen date/holiday message
-- [ ] Zod request/response schemas in `packages/schemas`
+- [x] CRUD endpoints for Article (create/update/delete/list) — `GET/POST /api/articles`, `PATCH/DELETE /api/articles/:id`, all behind `requireAuth`; delete is blocked with a 409 if the article is referenced by existing `OrderItem`/`RepeatingOrderItem` rows (FK `RESTRICT`) rather than erroring with a raw 500 — note Prisma 7's pg driver adapter surfaces constraint violations as a raw `DriverAdapterError` with a Postgres error code on `error.cause.code`, not the usual `PrismaClientKnownRequestError`/`P2003`, so this needed its own detection helper (`src/lib/prismaErrors.ts`)
+- [x] Availability computation: `available && (capacityPerCycle == null || currentCycleOrderedQty < capacityPerCycle)` — `src/lib/availability.ts`, verified live against a real order/order-item row inserted for the current open cycle
+- [x] Endpoint for the public order form: articles + `acceptingOrders` (derived from current cycle status) + reopen date/holiday message — `GET /api/public/articles`, no auth required
+- [x] Zod request/response schemas in `packages/schemas` — `packages/schemas/src/article.ts`, consumed by the backend as a workspace dependency
 
 ## Phase 6 — Core Backend API: Cycles
 
