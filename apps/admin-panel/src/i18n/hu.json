@@ -116,5 +116,10 @@
   "Update Availability": "Elérhetőség frissítése",
   "bread type": "kenyérfajtát",
   "bread types": "kenyérfajtát",
-  "Accepting Orders": "Rendelések fogadása"
+  "Accepting Orders": "Rendelések fogadása",
+  "Password": "Jelszó",
+  "Log in": "Bejelentkezés",
+  "Log out": "Kijelentkezés",
+  "Invalid email or password": "Érvénytelen email vagy jelszó",
+  "Invalid email": "Érvénytelen email"
 }

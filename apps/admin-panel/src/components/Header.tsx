@@ -3,11 +3,19 @@ import { useTranslation } from "react-i18next"
 import { LanguageSelector } from "./LanguageSelector"
 import { BackendHealthBadge } from "./BackendHealthBadge"
 import { Separator } from "./ui/separator"
+import { Button } from "./ui/button"
 import { cn } from "@/lib/utils"
+import { useSession, signOut } from "@/lib/authClient"
 
 export function Header() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { data: session } = useSession()
+
+  async function handleSignOut() {
+    await signOut()
+    navigate("/login", { replace: true })
+  }
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
@@ -33,20 +41,34 @@ export function Header() {
           </button>
 
           <div className="flex items-center gap-3">
-            <nav className="flex items-center gap-1">
-              <NavLink to="/" end className={navLinkClass}>
-                {t("Orders")}
-              </NavLink>
-              <NavLink to="/bread-types" className={navLinkClass}>
-                {t("Bread Types")}
-              </NavLink>
-            </nav>
+            {session && (
+              <>
+                <nav className="flex items-center gap-1">
+                  <NavLink to="/" end className={navLinkClass}>
+                    {t("Orders")}
+                  </NavLink>
+                  <NavLink to="/bread-types" className={navLinkClass}>
+                    {t("Bread Types")}
+                  </NavLink>
+                </nav>
 
-            <BackendHealthBadge />
+                <BackendHealthBadge />
 
-            <Separator orientation="vertical" className="h-6" />
+                <Separator orientation="vertical" className="h-6" />
+              </>
+            )}
 
             <LanguageSelector />
+
+            {session && (
+              <>
+                <Separator orientation="vertical" className="h-6" />
+                <span className="text-sm text-muted-foreground">{session.user.name}</span>
+                <Button variant="outline" size="sm" onClick={handleSignOut}>
+                  {t("Log out")}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -1,9 +1,41 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client.js";
+import { auth } from "../src/lib/auth.js";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
+
+async function seedAdminAccount() {
+  const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+
+  if (!email || !password) {
+    throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD must be set to seed the admin account.");
+  }
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) {
+    console.log(`Admin account already exists for ${email}, skipping.`);
+    return;
+  }
+
+  const ctx = await auth.$context;
+  const hashedPassword = await ctx.password.hash(password);
+  const user = await ctx.internalAdapter.createUser({
+    email,
+    name: "Admin",
+    emailVerified: true,
+  });
+  await ctx.internalAdapter.linkAccount({
+    userId: user.id,
+    providerId: "credential",
+    accountId: user.id,
+    password: hashedPassword,
+  });
+
+  console.log(`Seeded admin account for ${email}.`);
+}
 
 function isoWeekLabel(date: Date): string {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -223,6 +255,8 @@ async function main() {
   });
 
   console.log(`Seeded ${articles.length} articles, 1 open cycle (${cycle.label}), and 3 orders.`);
+
+  await seedAdminAccount();
 }
 
 main()

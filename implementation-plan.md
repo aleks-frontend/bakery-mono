@@ -38,16 +38,16 @@ Everything else originally in this phase (Dockerfiles, Railway project setup) ha
 
 ## Phase 4 — Authentication
 
-- [ ] Configure Better Auth with `prismaAdapter` (postgresql provider) and database sessions
-- [ ] Mount `toNodeHandler(auth)` at `/api/auth/*` in Express
-- [ ] Set `TRUSTED_ORIGINS` (admin panel's `localhost:5173` origin, plus its future real domain) — needed now, not just at deploy time, since the admin panel and backend are already different origins in local dev
-- [ ] **Explicitly disable public sign-up** — Better Auth's email/password setup exposes a public sign-up endpoint by default; since there's only ever one admin account, this must be locked down or anyone who finds the API could register their own account
-- [ ] Seed script creates the single admin account, reading its email/password from env vars (not hardcoded)
-- [ ] `requireAuth` Express middleware: calls `auth.api.getSession` (via `fromNodeHeaders`), rejects with 401 if no session, otherwise attaches `req.user`/`req.session` and calls `next()` — applied to all non-auth, non-public routes
-- [ ] Admin panel: login page (using existing shadcn/ui components already in the repo) + session handling via `packages/api-client`
-- [ ] After login: redirect to the order list, show the logged-in user's name in the header, add a sign-out button
-- [ ] Confirm logout + session expiry behavior
-- [ ] Security review pass focused specifically on the new authentication/authorization code before considering this phase done
+- [x] Configure Better Auth with `prismaAdapter` (postgresql provider) and database sessions
+- [x] Mount `toNodeHandler(auth)` at `/api/auth/*` in Express (Express 5 wildcard syntax: `/api/auth/*splat`)
+- [x] Set `TRUSTED_ORIGINS` (admin panel's `localhost:5173` origin, plus its future real domain) — needed now, not just at deploy time, since the admin panel and backend are already different origins in local dev — read from a `TRUSTED_ORIGINS` env var (comma-separated), shared between `cors()` and Better Auth's own origin check, falling back to the local dev origins if unset
+- [x] **Explicitly disable public sign-up** — Better Auth's email/password setup exposes a public sign-up endpoint by default; since there's only ever one admin account, this must be locked down or anyone who finds the API could register their own account — done via the built-in `emailAndPassword.disableSignUp: true` option
+- [x] Seed script creates the single admin account, reading its email/password from env vars (not hardcoded) — bypasses the disabled `/sign-up/email` route by provisioning directly via `auth.$context`'s `internalAdapter`, the documented pattern for server-side user creation
+- [x] `requireAuth` Express middleware: calls `auth.api.getSession` (via `fromNodeHeaders`), rejects with 401 if no session, otherwise attaches `req.user`/`req.session` and calls `next()` — written and verified standalone; not yet mounted on any route since no protected routes exist until Phase 5
+- [x] Admin panel: login page (using existing shadcn/ui components already in the repo) + session handling via `packages/api-client` (`createBakeryAuthClient`, built on Better Auth's React client)
+- [x] After login: redirect to the order list, show the logged-in user's name in the header, add a sign-out button
+- [x] Confirm logout + session expiry behavior — verified end-to-end in a real browser (invalid credentials, successful login/redirect, logout/redirect)
+- [x] Security review pass focused specifically on the new authentication/authorization code before considering this phase done — no findings
 
 ## Phase 5 — Core Backend API: Articles
 

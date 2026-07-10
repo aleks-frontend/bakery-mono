@@ -116,5 +116,10 @@
   "Update Availability": "Ažuriraj dostupnost",
   "bread type": "vrstu hleba",
   "bread types": "vrste hleba",
-  "Accepting Orders": "Prihvatanje porudžbina"
+  "Accepting Orders": "Prihvatanje porudžbina",
+  "Password": "Lozinka",
+  "Log in": "Prijavi se",
+  "Log out": "Odjavi se",
+  "Invalid email or password": "Pogrešan email ili lozinka",
+  "Invalid email": "Nevažeći email"
 }

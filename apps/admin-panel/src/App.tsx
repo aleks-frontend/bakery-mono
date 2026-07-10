@@ -2,7 +2,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom"
 import { OrdersPage } from "./app/OrdersPage"
 import { BreadTypesPage } from "./app/BreadTypesPage"
+import { LoginPage } from "./app/LoginPage"
 import { Header } from "./components/Header"
+import { RequireAuth } from "./components/RequireAuth"
 import "./i18n"
 
 const queryClient = new QueryClient({
@@ -21,8 +23,11 @@ function App() {
         <div className="min-h-screen">
           <Header />
           <Routes>
-            <Route path="/" element={<OrdersPage />} />
-            <Route path="/bread-types" element={<BreadTypesPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route element={<RequireAuth />}>
+              <Route path="/" element={<OrdersPage />} />
+              <Route path="/bread-types" element={<BreadTypesPage />} />
+            </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>

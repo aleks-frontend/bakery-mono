@@ -18,6 +18,7 @@ No test runner is configured.
 Copy `.env.example` to `.env` and fill in all variables:
 
 ```
+VITE_BACKEND_URL=                     # Real backend (health check + Better Auth), default http://localhost:3001
 VITE_API_BASE_URL=                    # GET    /webhook/bread-orders
 VITE_BREAD_TYPES_URL=                 # GET    /webhook/bread-types
 VITE_UPDATE_STATUS_URL=               # PATCH  /webhook/bakery/orders/status
@@ -35,7 +36,9 @@ All webhooks are n8n workflows. See `n8n/README.md` for details.
 
 ## Architecture
 
-React 18 + TypeScript SPA with two routes (`/` → `OrdersPage`, `/bread-types` → `BreadTypesPage`) via react-router-dom `HashRouter` in `App.tsx`. `HashRouter` is used because the app is hosted on Loopia Autobahn (nginx shared hosting) where nginx config is not editable — the hash is never sent to the server so refreshes always work.
+React 18 + TypeScript SPA with routes `/login` → `LoginPage`, and `/` → `OrdersPage` / `/bread-types` → `BreadTypesPage` gated behind the `RequireAuth` guard, via react-router-dom `HashRouter` in `App.tsx`. `HashRouter` is used because the app is hosted on Loopia Autobahn (nginx shared hosting) where nginx config is not editable — the hash is never sent to the server so refreshes always work.
+
+**Auth:** session-based login against the real backend's Better Auth instance (`src/lib/authClient.ts`, built on `@bakery/api-client`'s `createBakeryAuthClient`). `RequireAuth` (`src/components/RequireAuth.tsx`) redirects to `/login` when `useSession()` has no session; `Header.tsx` shows the logged-in user and a sign-out button.
 
 **Data flow (orders):**
 ```

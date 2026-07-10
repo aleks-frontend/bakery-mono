@@ -116,5 +116,10 @@
   "Update Availability": "Update Availability",
   "bread type": "bread type",
   "bread types": "bread types",
-  "Accepting Orders": "Accepting Orders"
+  "Accepting Orders": "Accepting Orders",
+  "Password": "Password",
+  "Log in": "Log in",
+  "Log out": "Log out",
+  "Invalid email or password": "Invalid email or password",
+  "Invalid email": "Invalid email"
 }

@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@bakery/schemas": "*",
+    "better-auth": "^1.6.23",
     "zod": "^3.23.8"
   },
   "peerDependencies": {
