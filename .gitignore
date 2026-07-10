@@ -25,6 +25,9 @@ npm-debug.log*
 *.swo
 *~
 
+# Claude Code (personal, per-machine settings)
+.claude/settings.local.json
+
 # OS
 .DS_Store
 Thumbs.db
