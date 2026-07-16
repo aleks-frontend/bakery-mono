@@ -1,12 +1,7 @@
-import { useQuery } from "@tanstack/react-query"
-import { fetchOrdersQueryFn } from "@/lib/api"
-import { Order } from "@/types/order"
+import { useOrdersQuery as useOrdersQueryBase } from "@bakery/api-client"
+import type { OrdersListParams } from "@bakery/api-client"
+import { ordersClient } from "@/lib/apiClient"
 
-export function useOrdersQuery() {
-  return useQuery<Order[], Error>({
-    queryKey: ["orders"],
-    queryFn: fetchOrdersQueryFn,
-    staleTime: 30000, // Consider data fresh for 30 seconds
-    refetchOnWindowFocus: true,
-  })
+export function useOrdersQuery(params?: OrdersListParams) {
+  return useOrdersQueryBase(ordersClient, params)
 }

@@ -1,5 +1,5 @@
 import { Document, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer"
-import type { Order } from "@/types/order"
+import type { Order } from "@bakery/api-client"
 import { registerReceiptFonts } from "@/components/OrderReceiptPdf"
 
 export type WorkshopListPdfLabels = {
@@ -72,43 +72,21 @@ const styles = StyleSheet.create({
   },
 })
 
-/** Split raw ordered-articles text on bullet (•); trim and normalize whitespace per chunk. */
-function splitBulletArticleChunks(raw: string): string[] {
-  if (!raw?.trim()) return []
-  return raw
-    .split(/•/g)
-    .map((c) => c.replace(/\s+/g, " ").trim())
-    .filter(Boolean)
-}
-
 /**
- * Parse one article line from the end: optional ~, NNg × qty = price RSD
- * Name is everything before the weight segment.
+ * Article names embed their pack weight as a trailing "NNNg" (optionally
+ * preceded by "~"), e.g. "Beli hleb - Fehér kenyér - 500g" or
+ * "Focaccia - ~800g". Extracts the base name and gram size from that suffix.
  */
-function parseWorkshopArticleLine(line: string): {
-  name: string
-  gramsPerUnit: number
-  qty: number
-  price: number
-} | null {
-  const s = line.trim()
-  if (!s) return null
-
-  const re =
-    /^([\s\S]*?)(?:~\s*)?(\d+)\s*g\s*[×x]\s*(\d+)\s*=\s*(\d+(?:[.,]\d+)?)\s*RSD\s*$/iu
-  const m = s.match(re)
+function parseArticleNameWeight(name: string): { baseName: string; gramsPerUnit: number } | null {
+  const re = /^([\s\S]*?)[\s\-–—]*~?\s*(\d+)\s*g\s*$/u
+  const m = name.trim().match(re)
   if (!m) return null
 
-  const name = m[1].replace(/\s+$/, "").replace(/[\s\-–—]+$/, "").trim()
+  const baseName = m[1].replace(/[\s\-–—]+$/, "").trim()
   const gramsPerUnit = parseInt(m[2], 10)
-  const qty = parseInt(m[3], 10)
-  const price = parseFloat(m[4].replace(",", "."))
+  if (!baseName || Number.isNaN(gramsPerUnit)) return null
 
-  if (!name || Number.isNaN(gramsPerUnit) || Number.isNaN(qty) || Number.isNaN(price)) {
-    return null
-  }
-
-  return { name, gramsPerUnit, qty, price }
+  return { baseName, gramsPerUnit }
 }
 
 type WorkshopArticleSummary = {
@@ -118,44 +96,32 @@ type WorkshopArticleSummary = {
   totalGrams: number
 }
 
-/** Collect bullet chunks from all orders' raw ordered-articles strings. */
-function collectAllArticleChunks(orders: Order[]): string[] {
-  const chunks: string[] = []
-  for (const order of orders) {
-    const raw = order.orderedArticlesRaw?.trim()
-    if (!raw) continue
-    chunks.push(...splitBulletArticleChunks(raw))
-  }
-  return chunks
-}
-
-/** Build ordered summaries: first-seen name order; within each, gram variants sorted ascending. */
+/** Build ordered summaries from all orders' items: first-seen name order; gram variants sorted ascending. */
 function summarizeWorkshopArticlesFromOrders(orders: Order[]): {
   summaries: WorkshopArticleSummary[]
   unparsedLines: string[]
 } {
-  const chunks = collectAllArticleChunks(orders)
   const unparsedLines: string[] = []
   /** name -> Map<gramsPerUnit, totalQty> */
   const byName = new Map<string, Map<number, number>>()
   const nameOrder: string[] = []
 
-  for (const chunk of chunks) {
-    const parsed = parseWorkshopArticleLine(chunk)
-    if (!parsed) {
-      unparsedLines.push(chunk)
-      continue
+  for (const order of orders) {
+    for (const item of order.items ?? []) {
+      const articleName = item.article?.name ?? item.articleId
+      const parsed = parseArticleNameWeight(articleName)
+      if (!parsed) {
+        unparsedLines.push(`${articleName} × ${item.quantity}`)
+        continue
+      }
+      let gmap = byName.get(parsed.baseName)
+      if (!gmap) {
+        gmap = new Map()
+        byName.set(parsed.baseName, gmap)
+        nameOrder.push(parsed.baseName)
+      }
+      gmap.set(parsed.gramsPerUnit, (gmap.get(parsed.gramsPerUnit) ?? 0) + item.quantity)
     }
-    let gmap = byName.get(parsed.name)
-    if (!gmap) {
-      gmap = new Map()
-      byName.set(parsed.name, gmap)
-      nameOrder.push(parsed.name)
-    }
-    gmap.set(
-      parsed.gramsPerUnit,
-      (gmap.get(parsed.gramsPerUnit) ?? 0) + parsed.qty,
-    )
   }
 
   const summaries: WorkshopArticleSummary[] = nameOrder.map((name) => {

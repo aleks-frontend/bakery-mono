@@ -10,7 +10,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Archive, Loader2 } from "lucide-react"
 import { useTranslation } from "react-i18next"
-import { useArchiveOrdersMutation } from "@/hooks/useArchiveOrdersMutation"
 
 interface ArchiveConfirmModalProps {
   open: boolean
@@ -19,6 +18,7 @@ interface ArchiveConfirmModalProps {
   entitySingular: string
   entityPlural: string
   onSuccess?: () => void
+  onArchive: (ids: string[]) => Promise<void>
 }
 
 export function ArchiveConfirmModal({
@@ -28,24 +28,28 @@ export function ArchiveConfirmModal({
   entitySingular,
   entityPlural,
   onSuccess,
+  onArchive,
 }: ArchiveConfirmModalProps) {
   const { t } = useTranslation()
-  const archiveMutation = useArchiveOrdersMutation()
+  const [isArchiving, setIsArchiving] = useState(false)
   const [archiveError, setArchiveError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) setArchiveError(null)
   }, [open])
 
-  const handleArchive = () => {
+  const handleArchive = async () => {
+    setIsArchiving(true)
     setArchiveError(null)
-    archiveMutation.mutate(ids, {
-      onSuccess: () => {
-        onOpenChange(false)
-        onSuccess?.()
-      },
-      onError: (err) => setArchiveError(err.message),
-    })
+    try {
+      await onArchive(ids)
+      onOpenChange(false)
+      onSuccess?.()
+    } catch (err) {
+      setArchiveError((err as Error).message)
+    } finally {
+      setIsArchiving(false)
+    }
   }
 
   const isSingle = ids.length === 1
@@ -70,16 +74,16 @@ export function ArchiveConfirmModal({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={archiveMutation.isPending}
+            disabled={isArchiving}
           >
             {t("Cancel")}
           </Button>
           <Button
             variant="default"
             onClick={handleArchive}
-            disabled={archiveMutation.isPending}
+            disabled={isArchiving}
           >
-            {archiveMutation.isPending ? (
+            {isArchiving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 {t("Archiving...")}

@@ -1,15 +1,17 @@
-import { useState, useMemo } from "react"
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useOrdersQuery } from "@/hooks/useOrdersQuery"
-import { useUpdateOrdersStatusBatchMutation } from "@/hooks/useUpdateOrderStatus"
-import { useDeleteOrdersMutation } from "@/hooks/useDeleteOrdersMutation"
+import { useBulkUpdateOrderStatusMutation } from "@/hooks/useUpdateOrderMutation"
+import { useDeleteOrderMutation } from "@/hooks/useDeleteOrderMutation"
+import { useArchiveOrderMutation } from "@/hooks/useArchiveOrderMutation"
+import { useUnarchiveOrderMutation } from "@/hooks/useUnarchiveOrderMutation"
 import { OrdersTable } from "@/components/OrdersTable"
 import { OrderDetailsModal } from "@/components/OrderDetailsModal"
-import { ManualOrderModal } from "@/components/ManualOrderModal"
+import { OrderFormModal } from "@/components/OrderFormModal"
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal"
 import { ArchiveConfirmModal } from "@/components/ArchiveConfirmModal"
 import { BulkPanel } from "@/components/BulkPanel"
-import { Order, OrderStatus } from "@/types/order"
+import type { Order, OrderStatus, OrdersListParams } from "@bakery/api-client"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -19,8 +21,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
 import {
   Archive,
+  ArchiveRestore,
   ClipboardList,
   FileSpreadsheet,
   Loader2,
@@ -31,13 +35,33 @@ import {
   X,
 } from "lucide-react"
 
+type SortableColumn = NonNullable<OrdersListParams["sortBy"]>
+
 export function OrdersPage() {
   const { t } = useTranslation()
-  const { data: orders = [], isLoading, error } = useOrdersQuery()
-  const batchStatusMutation = useUpdateOrdersStatusBatchMutation()
-  const deleteOrdersMutation = useDeleteOrdersMutation()
+  const [searchQuery, setSearchQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all")
+  const [sortBy, setSortBy] = useState<SortableColumn>("createdAt")
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
+  const [showArchived, setShowArchived] = useState(false)
 
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const { data: orders = [], isLoading, error } = useOrdersQuery({
+    search: searchQuery.trim() || undefined,
+    status: statusFilter === "all" ? undefined : statusFilter,
+    sortBy,
+    sortDir,
+    archived: showArchived,
+  })
+  const bulkStatusMutation = useBulkUpdateOrderStatusMutation()
+  const deleteOrdersMutation = useDeleteOrderMutation()
+  const archiveOrdersMutation = useArchiveOrderMutation()
+  const unarchiveOrdersMutation = useUnarchiveOrderMutation()
+
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
+  // Derived from the live query result (not a captured snapshot) so edits/status
+  // changes made while the details modal is open are reflected immediately,
+  // instead of requiring a close+reopen to pick up the refetched data.
+  const selectedOrder = selectedOrderId ? (orders.find((o) => o.id === selectedOrderId) ?? null) : null
   const [selectedOrders, setSelectedOrders] = useState<Order[]>([])
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
   const [isManualOrderModalOpen, setIsManualOrderModalOpen] = useState(false)
@@ -45,70 +69,66 @@ export function OrdersPage() {
   const [orderIdsToDelete, setOrderIdsToDelete] = useState<string[]>([])
   const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false)
   const [orderIdsToArchive, setOrderIdsToArchive] = useState<string[]>([])
-  const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all")
   const [bulkStatus, setBulkStatus] = useState<OrderStatus | "">("")
   const [workshopPdfLoading, setWorkshopPdfLoading] = useState(false)
   const [xlsLoading, setXlsLoading] = useState(false)
   const [stickersPdfLoading, setStickersPdfLoading] = useState(false)
 
-  const filteredOrders = useMemo(() => {
-    let filtered = orders
-
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((order) => order.status === statusFilter)
+  const handleSortChange = (column: SortableColumn) => {
+    if (column === sortBy) {
+      setSortDir((prev) => (prev === "asc" ? "desc" : "asc"))
+    } else {
+      setSortBy(column)
+      setSortDir("desc")
     }
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(
-        (order) =>
-          order.recipient.toLowerCase().includes(query) ||
-          order.phone.includes(query)
-      )
-    }
-
-    return filtered
-  }, [orders, statusFilter, searchQuery])
+  }
 
   const handleViewDetails = (order: Order) => {
-    setSelectedOrder(order)
+    setSelectedOrderId(order.id)
     setIsDetailsModalOpen(true)
   }
 
   const handleBulkStatusChange = (status: OrderStatus) => {
     setBulkStatus(status)
-    const updates = selectedOrders.map((o) => ({ orderId: o.orderId, status }))
-    batchStatusMutation.mutate(updates)
+    bulkStatusMutation.mutate({ ids: selectedOrders.map((o) => o.id), status })
   }
 
   const handleDeleteOrder = (order: Order) => {
-    setOrderIdsToDelete([order.orderId])
+    setOrderIdsToDelete([order.id])
     setDeleteConfirmOpen(true)
   }
 
   const handleBulkDelete = () => {
-    setOrderIdsToDelete(selectedOrders.map((o) => o.orderId))
+    setOrderIdsToDelete(selectedOrders.map((o) => o.id))
     setDeleteConfirmOpen(true)
   }
 
-  const handleArchiveOrder = (order: Order) => {
-    setOrderIdsToArchive([order.orderId])
-    setArchiveConfirmOpen(true)
+  // Archiving hides an order, so it's confirmed via a dialog; unarchiving just
+  // restores it to the default view, so it happens immediately with no confirmation.
+  const handleToggleArchive = (order: Order) => {
+    if (order.archived) {
+      unarchiveOrdersMutation.mutate([order.id])
+    } else {
+      setOrderIdsToArchive([order.id])
+      setArchiveConfirmOpen(true)
+    }
   }
 
-  const handleBulkArchive = () => {
-    setOrderIdsToArchive(selectedOrders.map((o) => o.orderId))
-    setArchiveConfirmOpen(true)
+  const handleBulkToggleArchive = () => {
+    const ids = selectedOrders.map((o) => o.id)
+    if (showArchived) {
+      unarchiveOrdersMutation.mutate(ids)
+    } else {
+      setOrderIdsToArchive(ids)
+      setArchiveConfirmOpen(true)
+    }
   }
 
   async function handleGenerateWorkshopList() {
     if (!selectedOrders.length) return
     setWorkshopPdfLoading(true)
     try {
-      const { downloadWorkshopListPdf } = await import(
-        "@/components/WorkshopListPdf"
-      )
+      const { downloadWorkshopListPdf } = await import("@/components/WorkshopListPdf")
       await downloadWorkshopListPdf(selectedOrders, {
         title: t("Workshop List"),
         generatedAt: t("Generated at"),
@@ -127,9 +147,7 @@ export function OrdersPage() {
     if (!selectedOrders.length) return
     setStickersPdfLoading(true)
     try {
-      const { downloadPackageStickersPdf } = await import(
-        "@/components/PackageStickersPdf"
-      )
+      const { downloadPackageStickersPdf } = await import("@/components/PackageStickersPdf")
       await downloadPackageStickersPdf(selectedOrders, {
         title: t("Package Stickers"),
         total: t("Total"),
@@ -146,9 +164,7 @@ export function OrdersPage() {
     if (!selectedOrders.length) return
     setXlsLoading(true)
     try {
-      const { downloadSelectedOrdersXls } = await import(
-        "@/lib/exportSelectedOrdersXls"
-      )
+      const { downloadSelectedOrdersXls } = await import("@/lib/exportSelectedOrdersXls")
       downloadSelectedOrdersXls(selectedOrders)
     } catch (err) {
       console.error(err)
@@ -172,9 +188,7 @@ export function OrdersPage() {
       <div className="container mx-auto py-8">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <p className="text-destructive font-medium mb-2">
-              {t("Error loading orders")}
-            </p>
+            <p className="text-destructive font-medium mb-2">{t("Error loading orders")}</p>
             <p className="text-sm text-muted-foreground">{error.message}</p>
           </div>
         </div>
@@ -187,9 +201,7 @@ export function OrdersPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t("Orders")}</h1>
-          <p className="text-muted-foreground">
-            {t("Manage bread and pastry orders")}
-          </p>
+          <p className="text-muted-foreground">{t("Manage bread and pastry orders")}</p>
         </div>
         <Button onClick={() => setIsManualOrderModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
@@ -222,61 +234,69 @@ export function OrdersPage() {
         </div>
         <Select
           value={statusFilter}
-          onValueChange={(value) =>
-            setStatusFilter(value as OrderStatus | "all")
-          }
+          onValueChange={(value) => setStatusFilter(value as OrderStatus | "all")}
         >
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder={t("Filter by status")} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("All Statuses")}</SelectItem>
-            <SelectItem value="Not received">{t("Not received")}</SelectItem>
-            <SelectItem value="In Progress">{t("In Progress")}</SelectItem>
-            <SelectItem value="Delivered">{t("Delivered")}</SelectItem>
+            <SelectItem value="NOT_RECEIVED">{t("Not received")}</SelectItem>
+            <SelectItem value="IN_PROGRESS">{t("In Progress")}</SelectItem>
+            <SelectItem value="DELIVERED">{t("Delivered")}</SelectItem>
           </SelectContent>
         </Select>
+        <div className="flex items-center gap-2 shrink-0">
+          <label htmlFor="show-archived-toggle" className="text-sm font-medium cursor-pointer">
+            {t("Show archived")}
+          </label>
+          <Switch id="show-archived-toggle" checked={showArchived} onCheckedChange={setShowArchived} />
+        </div>
       </div>
 
       {/* Orders Table */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            {t("Showing {{count}} of {{total}} orders", {
-              count: filteredOrders.length,
-              total: orders.length,
-            })}
+            {t("Showing {{count}} orders", { count: orders.length })}
           </p>
         </div>
         <OrdersTable
-          orders={filteredOrders}
+          orders={orders}
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
           onViewDetails={handleViewDetails}
           onDeleteOrder={handleDeleteOrder}
-          onArchiveOrder={handleArchiveOrder}
+          onToggleArchive={handleToggleArchive}
           onSelectionChange={setSelectedOrders}
         />
       </div>
 
       <BulkPanel count={selectedOrders.length}>
         <div className="flex items-center gap-1.5">
-          {batchStatusMutation.isPending && (
+          {bulkStatusMutation.isPending && (
             <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" aria-hidden />
           )}
           <select
             value={bulkStatus}
-            disabled={batchStatusMutation.isPending}
+            disabled={bulkStatusMutation.isPending}
             onChange={(e) => handleBulkStatusChange(e.target.value as OrderStatus)}
             className="border border-input rounded-md px-2 py-1.5 text-sm bg-background disabled:opacity-50"
           >
             <option value="">{t("Select status...")}</option>
-            <option value="Not received">{t("Not received")}</option>
-            <option value="In Progress">{t("In Progress")}</option>
-            <option value="Delivered">{t("Delivered")}</option>
+            <option value="NOT_RECEIVED">{t("Not received")}</option>
+            <option value="IN_PROGRESS">{t("In Progress")}</option>
+            <option value="DELIVERED">{t("Delivered")}</option>
           </select>
         </div>
-        <Button type="button" variant="outline" size="xs" onClick={handleBulkArchive}>
-          <Archive className="mr-1.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-          {t("Archive selected")}
+        <Button type="button" variant="outline" size="xs" onClick={handleBulkToggleArchive}>
+          {showArchived ? (
+            <ArchiveRestore className="mr-1.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+          ) : (
+            <Archive className="mr-1.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+          )}
+          {showArchived ? t("Unarchive selected") : t("Archive selected")}
         </Button>
         <Button type="button" variant="destructive" size="xs" onClick={handleBulkDelete}>
           <Trash2 className="mr-1.5 h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -307,10 +327,10 @@ export function OrdersPage() {
         open={isDetailsModalOpen}
         onOpenChange={setIsDetailsModalOpen}
         onDeleteOrder={handleDeleteOrder}
-        onArchiveOrder={handleArchiveOrder}
+        onToggleArchive={handleToggleArchive}
       />
 
-      <ManualOrderModal
+      <OrderFormModal
         open={isManualOrderModalOpen}
         onOpenChange={setIsManualOrderModalOpen}
       />
@@ -321,7 +341,7 @@ export function OrdersPage() {
         ids={orderIdsToDelete}
         entitySingular={t("order")}
         entityPlural={t("orders")}
-        onDelete={(ids) => deleteOrdersMutation.mutateAsync(ids)}
+        onDelete={(ids) => deleteOrdersMutation.mutateAsync(ids).then(() => {})}
         onSuccess={() => setIsDetailsModalOpen(false)}
       />
 
@@ -331,6 +351,7 @@ export function OrdersPage() {
         ids={orderIdsToArchive}
         entitySingular={t("order")}
         entityPlural={t("orders")}
+        onArchive={(ids) => archiveOrdersMutation.mutateAsync(ids).then(() => {})}
         onSuccess={() => setIsDetailsModalOpen(false)}
       />
     </div>

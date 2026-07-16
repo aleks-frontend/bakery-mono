@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { articleSchema } from "./article.js";
 
 export const orderStatusSchema = z.enum(["NOT_RECEIVED", "IN_PROGRESS", "DELIVERED"]);
 export type OrderStatus = z.infer<typeof orderStatusSchema>;
@@ -8,6 +9,8 @@ export const orderItemSchema = z.object({
   articleId: z.string(),
   quantity: z.number().int().positive(),
   unitPrice: z.number().int().positive(),
+  // Present when the backend joins the Article record (GET/POST/PATCH /api/orders all do).
+  article: articleSchema.optional(),
 });
 export type OrderItem = z.infer<typeof orderItemSchema>;
 
@@ -71,7 +74,12 @@ export type CreatePublicOrderInput = z.infer<typeof createPublicOrderSchema>;
 export const orderListQuerySchema = z.object({
   status: orderStatusSchema.optional(),
   cycleId: z.string().optional(),
-  archived: z.coerce.boolean().default(false),
+  // z.coerce.boolean() would use JS's Boolean(str) coercion, where the string
+  // "false" is truthy — that misparses an explicit `?archived=false` as true.
+  archived: z
+    .string()
+    .optional()
+    .transform((v) => v === "true"),
   search: z.string().optional(),
   sortBy: z.enum(["createdAt", "totalPrice", "recipient"]).default("createdAt"),
   sortDir: z.enum(["asc", "desc"]).default("desc"),

@@ -8,11 +8,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Order } from "@/types/order"
+import type { Order } from "@bakery/api-client"
 import { StatusBadge } from "./StatusBadge"
+import { OrderFormModal } from "./OrderFormModal"
 import { Separator } from "@/components/ui/separator"
 import { useTranslation } from "react-i18next"
-import { Archive, FileDown, Trash2 } from "lucide-react"
+import { Archive, ArchiveRestore, FileDown, Pencil, Trash2 } from "lucide-react"
 import type { ReceiptPdfLabels } from "@/components/OrderReceiptPdf"
 
 interface OrderDetailsModalProps {
@@ -20,7 +21,7 @@ interface OrderDetailsModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onDeleteOrder: (order: Order) => void
-  onArchiveOrder: (order: Order) => void
+  onToggleArchive: (order: Order) => void
 }
 
 export function OrderDetailsModal({
@@ -28,14 +29,16 @@ export function OrderDetailsModal({
   open,
   onOpenChange,
   onDeleteOrder,
-  onArchiveOrder,
+  onToggleArchive,
 }: OrderDetailsModalProps) {
   const { t } = useTranslation()
   const [pdfLoading, setPdfLoading] = useState(false)
+  const [isEditOpen, setIsEditOpen] = useState(false)
 
   if (!order) return null
 
   const currentOrder = order
+  const items = currentOrder.items ?? []
 
   const receiptLabels: ReceiptPdfLabels = {
     title: t("Receipt"),
@@ -57,9 +60,7 @@ export function OrderDetailsModal({
   async function handleDownloadReceiptPdf() {
     setPdfLoading(true)
     try {
-      const { downloadOrderReceiptPdf } = await import(
-        "@/components/OrderReceiptPdf"
-      )
+      const { downloadOrderReceiptPdf } = await import("@/components/OrderReceiptPdf")
       await downloadOrderReceiptPdf(currentOrder, receiptLabels)
     } catch (err) {
       console.error(err)
@@ -74,7 +75,7 @@ export function OrderDetailsModal({
         <DialogHeader className="pr-10">
           <DialogTitle>{t("Order Details")}</DialogTitle>
           <DialogDescription>
-            {t("Order ID: {{orderId}}", { orderId: currentOrder.orderId })}
+            {t("Order ID: {{orderId}}", { orderId: currentOrder.id })}
           </DialogDescription>
         </DialogHeader>
 
@@ -82,41 +83,35 @@ export function OrderDetailsModal({
           {/* Order Info */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                {t("Recipient")}
-              </p>
+              <p className="text-sm font-medium text-muted-foreground">{t("Recipient")}</p>
               <p className="text-sm">{currentOrder.recipient}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                {t("Phone")}
-              </p>
+              <p className="text-sm font-medium text-muted-foreground">{t("Phone")}</p>
               <p className="text-sm">{currentOrder.phone}</p>
             </div>
+            {currentOrder.email && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">{t("Email")}</p>
+                <p className="text-sm">{currentOrder.email}</p>
+              </div>
+            )}
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                {t("Date")}
-              </p>
-              <p className="text-sm">{currentOrder.date}</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("Date")}</p>
+              <p className="text-sm">{currentOrder.createdAt.toLocaleDateString()}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                {t("Location")}
-              </p>
+              <p className="text-sm font-medium text-muted-foreground">{t("Location")}</p>
               <p className="text-sm">{currentOrder.location}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                {t("Status")}
-              </p>
+              <p className="text-sm font-medium text-muted-foreground">{t("Status")}</p>
               <div className="mt-1">
                 <StatusBadge status={currentOrder.status} />
               </div>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                {t("Total Price")}
-              </p>
+              <p className="text-sm font-medium text-muted-foreground">{t("Total Price")}</p>
               <p className="text-sm font-semibold">{currentOrder.totalPrice} {t("RSD")}</p>
             </div>
           </div>
@@ -125,9 +120,7 @@ export function OrderDetailsModal({
             <>
               <Separator />
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">
-                  {t("Remark")}
-                </p>
+                <p className="text-sm font-medium text-muted-foreground mb-1">{t("Remark")}</p>
                 <p className="text-sm">{currentOrder.remark}</p>
               </div>
             </>
@@ -137,29 +130,22 @@ export function OrderDetailsModal({
 
           {/* Ordered Articles */}
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-3">
-              {t("Ordered Articles")}
-            </p>
+            <p className="text-sm font-medium text-muted-foreground mb-3">{t("Ordered Articles")}</p>
             <div className="space-y-2">
-              {currentOrder.orderedArticlesParsed.length > 0 ? (
-                currentOrder.orderedArticlesParsed.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex justify-between items-center p-3 border rounded-md"
-                  >
+              {items.length > 0 ? (
+                items.map((item) => (
+                  <div key={item.id} className="flex justify-between items-center p-3 border rounded-md">
                     <div>
-                      <p className="font-medium">{item.name}</p>
+                      <p className="font-medium">{item.article?.name ?? item.articleId}</p>
                       <p className="text-sm text-muted-foreground">
                         {t("Quantity: {{quantity}}", { quantity: item.quantity })}
                       </p>
                     </div>
-                    <p className="font-semibold">{item.price} {t("RSD")}</p>
+                    <p className="font-semibold">{item.unitPrice * item.quantity} {t("RSD")}</p>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  {currentOrder.orderedArticlesRaw || t("No articles")}
-                </p>
+                <p className="text-sm text-muted-foreground">{t("No articles")}</p>
               )}
             </div>
           </div>
@@ -181,11 +167,25 @@ export function OrderDetailsModal({
             type="button"
             variant="outline"
             size="lg"
-            onClick={() => onArchiveOrder(currentOrder)}
+            onClick={() => setIsEditOpen(true)}
             className="w-full gap-2.5 font-semibold text-base"
           >
-            <Archive className="size-5 shrink-0" aria-hidden />
-            {t("Archive Order")}
+            <Pencil className="size-5 shrink-0" aria-hidden />
+            {t("Edit Order")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={() => onToggleArchive(currentOrder)}
+            className="w-full gap-2.5 font-semibold text-base"
+          >
+            {currentOrder.archived ? (
+              <ArchiveRestore className="size-5 shrink-0" aria-hidden />
+            ) : (
+              <Archive className="size-5 shrink-0" aria-hidden />
+            )}
+            {currentOrder.archived ? t("Unarchive Order") : t("Archive Order")}
           </Button>
           <Button
             type="button"
@@ -199,6 +199,8 @@ export function OrderDetailsModal({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <OrderFormModal open={isEditOpen} onOpenChange={setIsEditOpen} order={currentOrder} />
     </Dialog>
   )
 }

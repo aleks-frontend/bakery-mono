@@ -12,4 +12,16 @@ export {
   useUpdateArticleAvailabilityMutation,
 } from "./articles.js";
 export type { ArticlesClient } from "./articles.js";
+export { createOrdersClient, useOrdersQuery, ordersQueryKey } from "./orders.js";
+export type { OrdersClient, OrdersListParams } from "./orders.js";
+export { createCyclesClient, useCurrentCycleQuery } from "./cycles.js";
+export type { CyclesClient } from "./cycles.js";
 export type { Article, ArticleWithAvailability, CreateArticleInput, UpdateArticleInput } from "@bakery/schemas";
+export type {
+  Order,
+  OrderItem,
+  OrderStatus,
+  CreateOrderInput,
+  UpdateOrderInput,
+} from "@bakery/schemas";
+export type { Cycle } from "@bakery/schemas";

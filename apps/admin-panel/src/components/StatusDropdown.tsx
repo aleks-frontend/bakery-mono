@@ -6,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { OrderStatus } from "@/types/order"
+import type { OrderStatus } from "@bakery/api-client"
 import { ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -16,7 +16,7 @@ interface StatusDropdownProps {
   disabled?: boolean
 }
 
-const allStatuses: OrderStatus[] = ["Not received", "In Progress", "Delivered"]
+const allStatuses: OrderStatus[] = ["NOT_RECEIVED", "IN_PROGRESS", "DELIVERED"]
 
 export function StatusDropdown({
   currentStatus,
@@ -26,8 +26,6 @@ export function StatusDropdown({
   const [isOpen, setIsOpen] = useState(false)
 
   const handleStatusSelect = (status: OrderStatus) => {
-    // TODO: Enable mutation when status update webhook is implemented
-    // For now, this is prepared but disabled
     if (!disabled) {
       onStatusChange(status)
     }

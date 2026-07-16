@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import type { Order } from "@/types/order";
+import type { Order } from "@bakery/api-client";
 
 /**
  * Builds an Excel workbook from selected orders (recipient + totalPrice only) and triggers download.

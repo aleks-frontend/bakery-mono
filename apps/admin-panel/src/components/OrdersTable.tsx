@@ -1,11 +1,8 @@
 import {
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
   flexRender,
-  getFilteredRowModel,
   type ColumnDef,
-  type SortingState,
   type RowSelectionState,
 } from "@tanstack/react-table";
 import {
@@ -18,32 +15,22 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { StatusDropdown } from "./StatusDropdown";
-import { Order, OrderStatus } from "@/types/order";
-import { Archive, ArrowUpDown, Eye, Trash2 } from "lucide-react";
+import type { Order, OrderStatus, OrdersListParams } from "@bakery/api-client";
+import { Archive, ArchiveRestore, ArrowUpDown, Eye, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useUpdateOrderStatusMutation } from "@/hooks/useUpdateOrderStatus";
+import { useUpdateOrderMutation } from "@/hooks/useUpdateOrderMutation";
 
-/** Parse API date strings for chronological sorting (ISO, DD.MM.YYYY, Date.parse fallbacks). */
-function parseOrderDateForSort(dateStr: string): number {
-  const s = dateStr.trim();
-  const eu = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})\b/);
-  if (eu) {
-    const d = Number(eu[1]);
-    const m = Number(eu[2]);
-    const y = Number(eu[3]);
-    const t = new Date(y, m - 1, d).getTime();
-    if (!Number.isNaN(t)) return t;
-  }
-  const t = Date.parse(s);
-  return Number.isNaN(t) ? 0 : t;
-}
+type SortableColumn = NonNullable<OrdersListParams["sortBy"]>;
 
 interface OrdersTableProps {
   orders: Order[];
+  sortBy: SortableColumn;
+  sortDir: "asc" | "desc";
+  onSortChange: (sortBy: SortableColumn) => void;
   onViewDetails: (order: Order) => void;
   onDeleteOrder: (order: Order) => void;
-  onArchiveOrder: (order: Order) => void;
+  onToggleArchive: (order: Order) => void;
   onSelectionChange?: (selectedOrders: Order[]) => void;
 }
 
@@ -77,35 +64,55 @@ function SelectCheckbox({
   );
 }
 
+function SortableHeader({
+  label,
+  column,
+  sortBy,
+  sortDir,
+  onSortChange,
+}: {
+  label: string;
+  column: SortableColumn;
+  sortBy: SortableColumn;
+  sortDir: "asc" | "desc";
+  onSortChange: (sortBy: SortableColumn) => void;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      onClick={() => onSortChange(column)}
+      className="h-8 px-2 text-xs font-semibold"
+    >
+      {label}
+      <ArrowUpDown className={sortBy === column ? "ml-2 h-4 w-4 opacity-100" : "ml-2 h-4 w-4 opacity-40"} />
+      {sortBy === column && (
+        <span className="sr-only">{sortDir === "asc" ? "ascending" : "descending"}</span>
+      )}
+    </Button>
+  );
+}
+
 export function OrdersTable({
   orders,
+  sortBy,
+  sortDir,
+  onSortChange,
   onViewDetails,
   onDeleteOrder,
-  onArchiveOrder,
+  onToggleArchive,
   onSelectionChange,
 }: OrdersTableProps) {
   const { t } = useTranslation();
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: "date", desc: true },
-  ]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
-  const [statusError, setStatusError] = useState<string | null>(null);
-  const { mutate: updateStatus } = useUpdateOrderStatusMutation();
+  const { mutate: updateOrder } = useUpdateOrderMutation();
 
   const handleStatusChange = useCallback(
-    (orderId: string, newStatus: OrderStatus) => {
+    (orderId: string, status: OrderStatus) => {
       setUpdatingOrderId(orderId);
-      setStatusError(null);
-      updateStatus(
-        { orderId, newStatus },
-        {
-          onSettled: () => setUpdatingOrderId(null),
-          onError: (err) => setStatusError(err.message),
-        }
-      );
+      updateOrder({ id: orderId, input: { status } }, { onSettled: () => setUpdatingOrderId(null) });
     },
-    [updateStatus]
+    [updateOrder]
   );
 
   const columns: ColumnDef<Order>[] = useMemo(
@@ -134,29 +141,17 @@ export function OrdersTable({
         ),
       },
       {
-        accessorKey: "orderId",
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="h-8 px-2 text-xs font-semibold"
-            >
-              {t("Order ID")}
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => (
-          <div className="font-medium">{row.getValue("orderId")}</div>
-        ),
-      },
-      {
         accessorKey: "recipient",
-        header: t("Recipient"),
-        cell: ({ row }) => <div>{row.getValue("recipient")}</div>,
+        header: () => (
+          <SortableHeader
+            label={t("Recipient")}
+            column="recipient"
+            sortBy={sortBy}
+            sortDir={sortDir}
+            onSortChange={onSortChange}
+          />
+        ),
+        cell: ({ row }) => <div className="font-medium">{row.getValue("recipient")}</div>,
       },
       {
         accessorKey: "phone",
@@ -165,24 +160,16 @@ export function OrdersTable({
       },
       {
         id: "date",
-        accessorFn: (row) => parseOrderDateForSort(row.date),
-        sortingFn: "basic",
-        sortDescFirst: true,
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="h-8 px-2 text-xs font-semibold"
-            >
-              {t("Date")}
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => <div>{row.original.date}</div>,
+        header: () => (
+          <SortableHeader
+            label={t("Date")}
+            column="createdAt"
+            sortBy={sortBy}
+            sortDir={sortDir}
+            onSortChange={onSortChange}
+          />
+        ),
+        cell: ({ row }) => <div>{row.original.createdAt.toLocaleDateString()}</div>,
       },
       {
         accessorKey: "location",
@@ -191,7 +178,15 @@ export function OrdersTable({
       },
       {
         accessorKey: "totalPrice",
-        header: t("Total Price"),
+        header: () => (
+          <SortableHeader
+            label={t("Total Price")}
+            column="totalPrice"
+            sortBy={sortBy}
+            sortDir={sortDir}
+            onSortChange={onSortChange}
+          />
+        ),
         cell: ({ row }) => {
           const price = row.getValue("totalPrice") as number;
           return (
@@ -209,10 +204,8 @@ export function OrdersTable({
           return (
             <StatusDropdown
               currentStatus={order.status}
-              onStatusChange={(newStatus) =>
-                handleStatusChange(order.orderId, newStatus)
-              }
-              disabled={updatingOrderId === order.orderId}
+              onStatusChange={(newStatus) => handleStatusChange(order.id, newStatus)}
+              disabled={updatingOrderId === order.id}
             />
           );
         },
@@ -224,11 +217,7 @@ export function OrdersTable({
           const order = row.original;
           return (
             <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onViewDetails(order)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => onViewDetails(order)}>
                 <Eye className="h-4 w-4 mr-2" />
                 {t("View details")}
               </Button>
@@ -236,9 +225,10 @@ export function OrdersTable({
                 variant="ghost"
                 size="sm"
                 className="text-muted-foreground hover:text-foreground"
-                onClick={() => onArchiveOrder(order)}
+                onClick={() => onToggleArchive(order)}
+                title={order.archived ? t("Unarchive Order") : t("Archive Order")}
               >
-                <Archive className="h-4 w-4" />
+                {order.archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
               </Button>
               <Button
                 variant="ghost"
@@ -253,66 +243,34 @@ export function OrdersTable({
         },
       },
     ],
-    [t, onViewDetails, onDeleteOrder, onArchiveOrder, handleStatusChange, updatingOrderId]
+    [t, sortBy, sortDir, onSortChange, onViewDetails, onDeleteOrder, onToggleArchive, handleStatusChange, updatingOrderId]
   );
 
   const table = useReactTable({
     data: orders,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    onSortingChange: setSorting,
     onRowSelectionChange: setRowSelection,
-    getRowId: (row) => row.orderId,
+    getRowId: (row) => row.id,
     enableRowSelection: true,
-    state: {
-      sorting,
-      rowSelection,
-    },
+    state: { rowSelection },
   });
 
   useEffect(() => {
     if (!onSelectionChange) return;
-    const selectedOrders = table.getSelectedRowModel().rows.map(
-      (row) => row.original
-    );
+    const selectedOrders = table.getSelectedRowModel().rows.map((row) => row.original);
     onSelectionChange(selectedOrders);
   }, [onSelectionChange, rowSelection, table]);
 
   return (
-    <div className="space-y-2">
-    {statusError && (
-      <div className="flex items-center justify-between rounded-md border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
-        <span>{statusError}</span>
-        <button
-          onClick={() => setStatusError(null)}
-          className="ml-4 text-destructive/70 hover:text-destructive"
-          aria-label="Dismiss"
-        >
-          ×
-        </button>
-      </div>
-    )}
     <div className="rounded-md border bg-white">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow
-              key={headerGroup.id}
-              className="bg-muted/60 hover:bg-muted/60 border-b-2 border-border"
-            >
+            <TableRow key={headerGroup.id} className="bg-muted/60 hover:bg-muted/60 border-b-2 border-border">
               {headerGroup.headers.map((header) => (
-                <TableHead
-                  key={header.id}
-                  className="text-foreground font-semibold text-xs"
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                <TableHead key={header.id} className="text-foreground font-semibold text-xs">
+                  {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
               ))}
             </TableRow>
@@ -321,14 +279,9 @@ export function OrdersTable({
         <TableBody>
           {table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() && "selected"}
-              >
+              <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
+                  <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                 ))}
               </TableRow>
             ))
@@ -341,7 +294,6 @@ export function OrdersTable({
           )}
         </TableBody>
       </Table>
-    </div>
     </div>
   );
 }

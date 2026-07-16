@@ -8,7 +8,7 @@ import {
   pdf,
   Font,
 } from "@react-pdf/renderer"
-import type { Order } from "@/types/order"
+import type { Order } from "@bakery/api-client"
 
 const BUSINESS_NAME = "Liszt Rapszodia"
 const BUSINESS_EMAIL = "order@lisztrapszodia.in.rs"
@@ -254,7 +254,11 @@ export function OrderReceiptDocument({
   labels: ReceiptPdfLabels
   logoSrc: string
 }) {
-  const items = order.orderedArticlesParsed
+  const items = (order.items ?? []).map((item) => ({
+    name: item.article?.name ?? item.articleId,
+    quantity: item.quantity,
+    price: item.unitPrice * item.quantity,
+  }))
 
   return (
     <Document>
@@ -272,10 +276,10 @@ export function OrderReceiptDocument({
           <View>
             <Text style={styles.receiptTitle}>{labels.title}</Text>
             <Text style={styles.receiptMeta}>
-              {labels.orderRef}: {order.orderId}
+              {labels.orderRef}: {order.id}
             </Text>
             <Text style={styles.receiptMeta}>
-              {labels.date}: {order.date}
+              {labels.date}: {order.createdAt.toLocaleDateString()}
             </Text>
           </View>
         </View>
@@ -320,11 +324,7 @@ export function OrderReceiptDocument({
             ))}
           </View>
         ) : (
-          <Text style={styles.fallbackText}>
-            {order.orderedArticlesRaw?.trim()
-              ? order.orderedArticlesRaw
-              : labels.articlesFallback}
-          </Text>
+          <Text style={styles.fallbackText}>{labels.articlesFallback}</Text>
         )}
 
         <View style={styles.totalRow}>
@@ -366,7 +366,7 @@ export async function downloadOrderReceiptPdf(
     <OrderReceiptDocument order={order} labels={labels} logoSrc={logoSrc} />
   ).toBlob()
 
-  const safeId = order.orderId.replace(/[^\w.-]+/g, "_")
+  const safeId = order.id.replace(/[^\w.-]+/g, "_")
   const filename = `receipt-${safeId}.pdf`
 
   const url = URL.createObjectURL(blob)

@@ -20,60 +20,78 @@ import { Separator } from "@/components/ui/separator"
 import { useTranslation } from "react-i18next"
 import { Loader2, Plus, X } from "lucide-react"
 import { useArticlesQuery } from "@/hooks/useArticlesQuery"
-import { useCreateManualOrderMutation } from "@/hooks/useCreateManualOrderMutation"
+import { useCurrentCycleQuery } from "@/hooks/useCurrentCycleQuery"
+import { useCreateOrderMutation } from "@/hooks/useCreateOrderMutation"
+import { useUpdateOrderMutation } from "@/hooks/useUpdateOrderMutation"
 import { cn } from "@/lib/utils"
+import type { Order } from "@bakery/api-client"
 
-interface ManualOrderModalProps {
+interface OrderFormModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  order?: Order
 }
 
-type ItemState = { breadId: string; quantity: number }
+type ItemState = { articleId: string; quantity: number }
 
 const LOCATIONS = ["Hajdukovo", "Subotica"] as const
 
 const emptyForm = {
-  firstName: "",
-  lastName: "",
+  recipient: "",
   phone: "",
   email: "",
   location: "",
   remark: "",
 }
 
-const emptyItem: ItemState = { breadId: "", quantity: 1 }
+const emptyItem: ItemState = { articleId: "", quantity: 1 }
 
-export function ManualOrderModal({ open, onOpenChange }: ManualOrderModalProps) {
+export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProps) {
   const { t } = useTranslation()
-  const { data: articlesData, isLoading: breadTypesLoading } = useArticlesQuery()
-  const createMutation = useCreateManualOrderMutation()
+  const isEdit = order !== undefined
+  const { data: articlesData, isLoading: articlesLoading } = useArticlesQuery()
+  const { data: currentCycle, isLoading: cycleLoading } = useCurrentCycleQuery()
+  const createMutation = useCreateOrderMutation()
+  const updateMutation = useUpdateOrderMutation()
+  const mutation = isEdit ? updateMutation : createMutation
 
   const [form, setForm] = useState(emptyForm)
   const [items, setItems] = useState<ItemState[]>([{ ...emptyItem }])
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [submitError, setSubmitError] = useState<string | null>(null)
 
-  const breadTypes = useMemo(() => articlesData ?? [], [articlesData])
+  const articles = useMemo(() => articlesData ?? [], [articlesData])
 
   useEffect(() => {
-    if (!open) {
-      setForm(emptyForm)
-      setItems([{ ...emptyItem }])
+    if (open) {
+      setForm({
+        recipient: order?.recipient ?? "",
+        phone: order?.phone ?? "",
+        email: order?.email ?? "",
+        location: order?.location ?? "",
+        remark: order?.remark ?? "",
+      })
+      setItems(
+        order?.items?.length
+          ? order.items.map((item) => ({ articleId: item.articleId, quantity: item.quantity }))
+          : [{ articleId: articles[0]?.id ?? "", quantity: 1 }]
+      )
       setErrors({})
-      setSubmitError(null)
     }
-  }, [open])
+    // Deliberately excludes `articles`: it's only read for its current value
+    // when the modal opens. Including it would re-run this reset whenever the
+    // article list changes while the modal is open, wiping user-entered items.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, order])
 
-  // Pre-select first bread type when types load and item has no selection yet
+  // Covers the case where the article list finishes loading after the modal
+  // is already open and an item still has no selection.
   useEffect(() => {
-    if (breadTypes.length > 0) {
+    if (articles.length > 0) {
       setItems((prev) =>
-        prev.map((item) =>
-          item.breadId === "" ? { ...item, breadId: breadTypes[0].id } : item
-        )
+        prev.map((item) => (item.articleId === "" ? { ...item, articleId: articles[0].id } : item))
       )
     }
-  }, [breadTypes])
+  }, [articles])
 
   const setField = (field: keyof typeof emptyForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -81,7 +99,7 @@ export function ManualOrderModal({ open, onOpenChange }: ManualOrderModalProps) 
   }
 
   const addItem = () => {
-    setItems((prev) => [...prev, { breadId: breadTypes[0]?.id ?? "", quantity: 1 }])
+    setItems((prev) => [...prev, { articleId: articles[0]?.id ?? "", quantity: 1 }])
     setErrors((prev) => { const next = { ...prev }; delete next.items; return next })
   }
 
@@ -90,116 +108,95 @@ export function ManualOrderModal({ open, onOpenChange }: ManualOrderModalProps) 
   }
 
   const updateItem = (index: number, field: keyof ItemState, value: string | number) => {
-    setItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
-    )
+    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)))
   }
 
   const getItemTotal = (item: ItemState) => {
-    const bread = breadTypes.find((b) => b.id === item.breadId)
-    return bread ? bread.price * item.quantity : 0
+    const article = articles.find((a) => a.id === item.articleId)
+    return article ? article.price * item.quantity : 0
   }
 
   const totalPrice = items.reduce((sum, item) => sum + getItemTotal(item), 0)
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {}
-    if (!form.firstName.trim()) newErrors.firstName = t("Required")
-    if (!form.lastName.trim()) newErrors.lastName = t("Required")
+    if (!form.recipient.trim()) newErrors.recipient = t("Required")
     if (!form.phone.trim()) newErrors.phone = t("Required")
     if (!form.location) newErrors.location = t("Required")
     if (items.length === 0) newErrors.items = t("At least one item required")
     items.forEach((item, i) => {
-      if (!item.breadId) newErrors[`item_${i}_bread`] = t("Required")
+      if (!item.articleId) newErrors[`item_${i}_article`] = t("Required")
       if (item.quantity < 1) newErrors[`item_${i}_qty`] = t("Required")
     })
+    if (!isEdit && !currentCycle) newErrors.cycle = t("No cycle is currently open")
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = () => {
     if (!validate()) return
-    setSubmitError(null)
 
-    const payload = {
-      customer: {
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
-        phone: form.phone.trim(),
-        email: form.email.trim(),
-      },
-      items: items.map((item) => {
-        const bread = breadTypes.find((b) => b.id === item.breadId)!
-        return {
-          breadId: item.breadId,
-          breadName: bread.name,
-          quantity: item.quantity,
-          unitPrice: bread.price,
-        }
-      }),
-      totalPrice,
+    const fields = {
+      recipient: form.recipient.trim(),
+      phone: form.phone.trim(),
+      email: form.email.trim() || null,
       location: form.location,
-      remark: form.remark.trim() || undefined,
+      remark: form.remark.trim() || null,
+      items: items.map((item) => ({ articleId: item.articleId, quantity: item.quantity })),
     }
 
-    createMutation.mutate(payload, {
-      onSuccess: () => onOpenChange(false),
-      onError: (err) => setSubmitError(err.message),
-    })
+    const onSuccess = () => onOpenChange(false)
+
+    if (isEdit) {
+      updateMutation.mutate({ id: order.id, input: fields }, { onSuccess })
+    } else {
+      createMutation.mutate({ ...fields, cycleId: currentCycle!.id }, { onSuccess })
+    }
   }
 
-  const inputClass = "mt-1 block w-full"
+  const isLoadingDeps = articlesLoading || (!isEdit && cycleLoading)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="pr-10">
-          <DialogTitle>{t("Manual Order")}</DialogTitle>
-          <DialogDescription>{t("Create a new order manually")}</DialogDescription>
+          <DialogTitle>{isEdit ? t("Edit Order") : t("Manual Order")}</DialogTitle>
+          <DialogDescription>
+            {isEdit ? t("Update order details") : t("Create a new order manually")}
+          </DialogDescription>
         </DialogHeader>
 
         <form autoComplete="off" onSubmit={(e) => e.preventDefault()} className="space-y-6 py-2">
+          {!isEdit && !cycleLoading && !currentCycle && (
+            <p className="text-sm text-destructive">{t("No cycle is currently open")}</p>
+          )}
+
           {/* Customer info */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium">{t("First Name")} *</label>
+            <div className="col-span-2">
+              <label className="text-sm font-medium">{t("Recipient")} *</label>
               <Input
-                className={cn(inputClass, errors.firstName && "border-destructive")}
-                value={form.firstName}
-                onChange={(e) => setField("firstName", e.target.value)}
+                className={cn("mt-1", errors.recipient && "border-destructive")}
+                value={form.recipient}
+                onChange={(e) => setField("recipient", e.target.value)}
               />
-              {errors.firstName && (
-                <p className="text-xs text-destructive mt-1">{errors.firstName}</p>
-              )}
-            </div>
-            <div>
-              <label className="text-sm font-medium">{t("Last Name")} *</label>
-              <Input
-                className={cn(inputClass, errors.lastName && "border-destructive")}
-                value={form.lastName}
-                onChange={(e) => setField("lastName", e.target.value)}
-              />
-              {errors.lastName && (
-                <p className="text-xs text-destructive mt-1">{errors.lastName}</p>
-              )}
+              {errors.recipient && <p className="text-xs text-destructive mt-1">{errors.recipient}</p>}
             </div>
             <div>
               <label className="text-sm font-medium">{t("Phone")} *</label>
               <Input
                 type="tel"
                 autoComplete="tel"
-                className={cn(inputClass, errors.phone && "border-destructive")}
+                className={cn("mt-1", errors.phone && "border-destructive")}
                 value={form.phone}
                 onChange={(e) => setField("phone", e.target.value)}
               />
-              {errors.phone && (
-                <p className="text-xs text-destructive mt-1">{errors.phone}</p>
-              )}
+              {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone}</p>}
             </div>
             <div>
               <label className="text-sm font-medium">{t("Email")}</label>
               <Input
-                className={inputClass}
+                className="mt-1"
                 type="email"
                 value={form.email}
                 onChange={(e) => setField("email", e.target.value)}
@@ -208,10 +205,7 @@ export function ManualOrderModal({ open, onOpenChange }: ManualOrderModalProps) 
             <div className="col-span-2">
               <label className="text-sm font-medium">{t("Location")} *</label>
               <div className="mt-1">
-                <Select
-                  value={form.location}
-                  onValueChange={(val) => setField("location", val)}
-                >
+                <Select value={form.location} onValueChange={(val) => setField("location", val)}>
                   <SelectTrigger className={cn(errors.location && "border-destructive")}>
                     <SelectValue placeholder={t("Select location...")} />
                   </SelectTrigger>
@@ -224,9 +218,7 @@ export function ManualOrderModal({ open, onOpenChange }: ManualOrderModalProps) 
                   </SelectContent>
                 </Select>
               </div>
-              {errors.location && (
-                <p className="text-xs text-destructive mt-1">{errors.location}</p>
-              )}
+              {errors.location && <p className="text-xs text-destructive mt-1">{errors.location}</p>}
             </div>
           </div>
 
@@ -235,7 +227,7 @@ export function ManualOrderModal({ open, onOpenChange }: ManualOrderModalProps) 
           {/* Order items */}
           <div>
             <p className="text-sm font-medium mb-3">{t("Ordered Articles")}</p>
-            {breadTypesLoading ? (
+            {isLoadingDeps ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span>{t("Loading orders...")}</span>
@@ -243,32 +235,28 @@ export function ManualOrderModal({ open, onOpenChange }: ManualOrderModalProps) 
             ) : (
               <div className="space-y-2">
                 {items.map((item, i) => {
-                  const bread = breadTypes.find((b) => b.id === item.breadId)
-                  const itemTotal = bread ? bread.price * item.quantity : 0
+                  const article = articles.find((a) => a.id === item.articleId)
+                  const itemTotal = article ? article.price * item.quantity : 0
                   return (
                     <div key={i} className="flex gap-2 items-start">
                       <div className="flex-1">
                         <select
-                          value={item.breadId}
-                          onChange={(e) => updateItem(i, "breadId", e.target.value)}
+                          value={item.articleId}
+                          onChange={(e) => updateItem(i, "articleId", e.target.value)}
                           className={cn(
                             "w-full border rounded-md px-3 py-2 text-sm bg-background",
-                            errors[`item_${i}_bread`]
-                              ? "border-destructive"
-                              : "border-input"
+                            errors[`item_${i}_article`] ? "border-destructive" : "border-input"
                           )}
                         >
-                          <option value="">{t("Select bread...")}</option>
-                          {breadTypes.map((b) => (
-                            <option key={b.id} value={b.id}>
-                              {b.name} ({b.price} {t("RSD")})
+                          <option value="">{t("Select article...")}</option>
+                          {articles.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.name} ({a.price} {t("RSD")})
                             </option>
                           ))}
                         </select>
-                        {errors[`item_${i}_bread`] && (
-                          <p className="text-xs text-destructive mt-0.5">
-                            {errors[`item_${i}_bread`]}
-                          </p>
+                        {errors[`item_${i}_article`] && (
+                          <p className="text-xs text-destructive mt-0.5">{errors[`item_${i}_article`]}</p>
                         )}
                       </div>
                       <div className="w-20">
@@ -276,9 +264,7 @@ export function ManualOrderModal({ open, onOpenChange }: ManualOrderModalProps) 
                           type="number"
                           min={1}
                           value={item.quantity}
-                          onChange={(e) =>
-                            updateItem(i, "quantity", Math.max(1, parseInt(e.target.value) || 1))
-                          }
+                          onChange={(e) => updateItem(i, "quantity", Math.max(1, parseInt(e.target.value) || 1))}
                           className="w-full border border-input rounded-md px-2 py-2 text-sm bg-background"
                         />
                       </div>
@@ -299,16 +285,14 @@ export function ManualOrderModal({ open, onOpenChange }: ManualOrderModalProps) 
                   )
                 })}
 
-                {errors.items && (
-                  <p className="text-xs text-destructive">{errors.items}</p>
-                )}
+                {errors.items && <p className="text-xs text-destructive">{errors.items}</p>}
 
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={addItem}
-                  disabled={breadTypes.length === 0}
+                  disabled={articles.length === 0}
                   className="mt-1"
                 >
                   <Plus className="h-4 w-4 mr-1" />
@@ -336,25 +320,23 @@ export function ManualOrderModal({ open, onOpenChange }: ManualOrderModalProps) 
             <span>{t("Total Price")}</span>
             <span>{totalPrice} {t("RSD")}</span>
           </div>
-
-          {submitError && (
-            <p className="text-sm text-destructive">{submitError}</p>
-          )}
         </form>
 
         <DialogFooter className="mt-2 flex w-full flex-col border-t pt-4 sm:flex-col">
           <Button
             type="button"
             size="lg"
-            disabled={createMutation.isPending}
+            disabled={mutation.isPending || (!isEdit && !currentCycle)}
             onClick={handleSubmit}
             className="w-full font-semibold text-base"
           >
-            {createMutation.isPending ? (
+            {mutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 {t("Creating...")}
               </>
+            ) : isEdit ? (
+              t("Save Changes")
             ) : (
               t("Create Order")
             )}

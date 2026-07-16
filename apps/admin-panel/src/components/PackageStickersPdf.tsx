@@ -1,5 +1,5 @@
 import { Document, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer"
-import type { Order } from "@/types/order"
+import type { Order } from "@bakery/api-client"
 import { registerReceiptFonts } from "@/components/OrderReceiptPdf"
 
 export type PackageStickersPdfLabels = {
@@ -122,7 +122,7 @@ function Sticker({
   order: Order
   labels: PackageStickersPdfLabels
 }) {
-  const items = order.orderedArticlesParsed
+  const items = order.items ?? []
 
   return (
     <View style={styles.sticker} wrap={false}>
@@ -134,7 +134,7 @@ function Sticker({
               <Text style={styles.phoneInline}> ({order.phone})</Text>
             ) : ""}
           </Text>
-          <Text style={styles.orderId}>{order.orderId}</Text>
+          <Text style={styles.orderId}>{order.id}</Text>
         </View>
 
         {order.location ? (
@@ -144,15 +144,11 @@ function Sticker({
         <View style={styles.divider} />
 
         {items.length > 0 ? (
-          items.map((item, i) => (
-            <Text key={i} style={styles.articleLine}>
-              • {item.name} × {item.quantity}
+          items.map((item) => (
+            <Text key={item.id} style={styles.articleLine}>
+              • {item.article?.name ?? item.articleId} × {item.quantity}
             </Text>
           ))
-        ) : order.orderedArticlesRaw?.trim() ? (
-          <Text style={styles.rawArticles}>
-            {order.orderedArticlesRaw.trim()}
-          </Text>
         ) : (
           <Text style={styles.noArticlesText}>{labels.noArticles}</Text>
         )}
@@ -182,7 +178,7 @@ export function PackageStickersDocument({
       <Page size="A4" style={styles.page}>
         <View style={styles.grid}>
           {orders.map((order) => (
-            <Sticker key={order.orderId} order={order} labels={labels} />
+            <Sticker key={order.id} order={order} labels={labels} />
           ))}
         </View>
       </Page>
