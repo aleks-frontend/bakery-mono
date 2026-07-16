@@ -29,10 +29,11 @@ export const orderSchema = z.object({
 });
 export type Order = z.infer<typeof orderSchema>;
 
-const orderItemInputSchema = z.object({
+export const orderItemInputSchema = z.object({
   articleId: z.string().min(1),
   quantity: z.number().int().positive(),
 });
+export type OrderItemInput = z.infer<typeof orderItemInputSchema>;
 
 export const createOrderSchema = z.object({
   recipient: z.string().min(1),
@@ -55,6 +56,17 @@ export const updateOrderSchema = z.object({
   items: z.array(orderItemInputSchema).min(1).optional(),
 });
 export type UpdateOrderInput = z.infer<typeof updateOrderSchema>;
+
+export const createPublicOrderSchema = z.object({
+  recipient: z.string().min(1),
+  phone: z.string().min(1),
+  email: z.string().email().nullable().optional(),
+  location: z.string().min(1),
+  remark: z.string().nullable().optional(),
+  items: z.array(orderItemInputSchema).min(1),
+  repeat: z.boolean().default(false),
+});
+export type CreatePublicOrderInput = z.infer<typeof createPublicOrderSchema>;
 
 export const orderListQuerySchema = z.object({
   status: orderStatusSchema.optional(),

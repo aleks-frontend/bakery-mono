@@ -10,7 +10,7 @@ export const ordersRouter = Router();
 
 ordersRouter.use(requireAuth);
 
-const orderInclude = { items: { include: { article: true } } } satisfies PrismaTypes.OrderInclude;
+export const orderInclude = { items: { include: { article: true } } } satisfies PrismaTypes.OrderInclude;
 
 ordersRouter.get("/", async (req, res) => {
   const parsed = orderListQuerySchema.safeParse(req.query);
@@ -139,6 +139,34 @@ ordersRouter.delete("/:id", async (req, res) => {
     }
     throw error;
   }
+});
+
+ordersRouter.post("/:id/make-repeating", async (req, res) => {
+  const order = await prisma.order.findUnique({ where: { id: req.params.id }, include: { items: true } });
+  if (!order) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+
+  const repeatingOrder = await prisma.$transaction(async (tx) => {
+    const created = await tx.repeatingOrder.create({
+      data: {
+        recipient: order.recipient,
+        phone: order.phone,
+        email: order.email,
+        location: order.location,
+        remark: order.remark,
+        items: {
+          create: order.items.map((item) => ({ articleId: item.articleId, quantity: item.quantity })),
+        },
+      },
+      include: { items: true },
+    });
+    await tx.order.update({ where: { id: order.id }, data: { repeatingOrderId: created.id } });
+    return created;
+  });
+
+  res.status(201).json(repeatingOrder);
 });
 
 ordersRouter.patch("/:id/archive", async (req, res) => {

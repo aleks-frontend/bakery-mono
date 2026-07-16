@@ -8,6 +8,7 @@ import { articlesRouter } from "./routes/articles.js";
 import { cyclesRouter } from "./routes/cycles.js";
 import { ordersRouter } from "./routes/orders.js";
 import { publicRouter } from "./routes/public.js";
+import { repeatingOrdersRouter } from "./routes/repeatingOrders.js";
 
 const app = express();
 const port = process.env.PORT ?? 3001;
@@ -44,6 +45,7 @@ app.use("/api/articles", articlesRouter);
 app.use("/api/cycles", cyclesRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/public", publicRouter);
+app.use("/api/repeating-orders", repeatingOrdersRouter);
 
 app.listen(port, () => {
   console.log(`Backend listening on port ${port}`);

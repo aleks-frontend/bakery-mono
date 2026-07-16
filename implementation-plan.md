@@ -77,10 +77,10 @@ Schema note: added `Order.email` (nullable — the old n8n form collected it but
 
 ## Phase 8 — Core Backend API: Repeating Orders
 
-- [ ] CRUD endpoints for RepeatingOrder
-- [ ] "Make repeating" endpoint: creates a RepeatingOrder from an existing Order, links `order.repeatingOrderId`
-- [ ] Clone-on-cycle-start logic: for every RepeatingOrder, create a new Order in the new cycle (subject to capacity, no bypass), linked via `repeatingOrderId`
-- [ ] Order-form submission accepts a `repeat` flag that also creates a RepeatingOrder
+- [x] CRUD endpoints for RepeatingOrder — `GET/POST /api/repeating-orders`, `GET/PATCH/DELETE /api/repeating-orders/:id`, all behind `requireAuth`; no capacity check here since a RepeatingOrder is just a template — capacity is only enforced at actual clone time
+- [x] "Make repeating" endpoint: creates a RepeatingOrder from an existing Order, links `order.repeatingOrderId` — `POST /api/orders/:id/make-repeating`, copies recipient/phone/email/location/remark/items without altering the original order's own content
+- [x] Clone-on-cycle-start logic: for every RepeatingOrder, create a new Order in the new cycle (subject to capacity, no bypass), linked via `repeatingOrderId` — `src/lib/cloneRepeatingOrders.ts`, wired into `POST /api/cycles`; runs sequentially (not in parallel) so each clone's capacity check sees the orders already created earlier in the same run — verified live that a capacity conflict skips just that one repeating order (with a reported reason) without blocking the others or the cycle-start itself
+- [x] Order-form submission accepts a `repeat` flag that also creates a RepeatingOrder — since the public order form still goes through n8n until Phase 13, this landed as the new `POST /api/public/orders` endpoint (no auth, requires a currently `OPEN` cycle, unlike the admin path in Phase 7) with a `repeat: boolean` field — verified live end-to-end
 
 ## Phase 9 — Admin Panel Integration
 

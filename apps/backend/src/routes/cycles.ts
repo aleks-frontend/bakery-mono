@@ -4,6 +4,7 @@ import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { suggestNextCycleDates } from "../lib/cycleDates.js";
+import { cloneRepeatingOrdersIntoCycle } from "../lib/cloneRepeatingOrders.js";
 
 export const cyclesRouter = Router();
 
@@ -24,8 +25,6 @@ cyclesRouter.get("/next-suggestion", async (_req, res) => {
   res.json(suggestNextCycleDates(lastCycle));
 });
 
-// "Start next cycle" — RepeatingOrder cloning into the new cycle is wired in
-// once Phase 8 builds the RepeatingOrder CRUD/model support.
 cyclesRouter.post("/", async (req, res) => {
   const parsed = startCycleSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -39,9 +38,9 @@ cyclesRouter.post("/", async (req, res) => {
     return;
   }
 
+  let cycle;
   try {
-    const cycle = await prisma.cycle.create({ data: parsed.data });
-    res.status(201).json(cycle);
+    cycle = await prisma.cycle.create({ data: parsed.data });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       res.status(409).json({ error: "A cycle with this label already exists" });
@@ -49,6 +48,9 @@ cyclesRouter.post("/", async (req, res) => {
     }
     throw error;
   }
+
+  const repeatingOrdersCloned = await cloneRepeatingOrdersIntoCycle(cycle.id);
+  res.status(201).json({ cycle, repeatingOrdersCloned });
 });
 
 cyclesRouter.patch("/:id/close", async (req, res) => {
