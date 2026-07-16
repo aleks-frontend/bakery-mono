@@ -172,6 +172,11 @@ export function OrdersTable({
         cell: ({ row }) => <div>{row.original.createdAt.toLocaleDateString()}</div>,
       },
       {
+        id: "cycle",
+        header: t("Cycle"),
+        cell: ({ row }) => <div>{row.original.cycle?.label ?? "—"}</div>,
+      },
+      {
         accessorKey: "location",
         header: t("Location"),
         cell: ({ row }) => <div>{row.getValue("location")}</div>,

@@ -14,8 +14,13 @@ export {
 export type { ArticlesClient } from "./articles.js";
 export { createOrdersClient, useOrdersQuery, ordersQueryKey } from "./orders.js";
 export type { OrdersClient, OrdersListParams } from "./orders.js";
-export { createCyclesClient, useCurrentCycleQuery } from "./cycles.js";
-export type { CyclesClient } from "./cycles.js";
+export {
+  createCyclesClient,
+  useCurrentCycleQuery,
+  useCyclesQuery,
+  useNextCycleSuggestionQuery,
+} from "./cycles.js";
+export type { CyclesClient, RepeatingOrderCloneResult, StartCycleResult } from "./cycles.js";
 export type { Article, ArticleWithAvailability, CreateArticleInput, UpdateArticleInput } from "@bakery/schemas";
 export type {
   Order,
@@ -24,4 +29,4 @@ export type {
   CreateOrderInput,
   UpdateOrderInput,
 } from "@bakery/schemas";
-export type { Cycle } from "@bakery/schemas";
+export type { Cycle, CycleStatus, CycleSuggestion, StartCycleInput } from "@bakery/schemas";

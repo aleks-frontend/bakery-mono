@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { articleSchema } from "./article.js";
+import { cycleSchema } from "./cycle.js";
 
 export const orderStatusSchema = z.enum(["NOT_RECEIVED", "IN_PROGRESS", "DELIVERED"]);
 export type OrderStatus = z.infer<typeof orderStatusSchema>;
@@ -25,6 +26,8 @@ export const orderSchema = z.object({
   remark: z.string().nullable(),
   archived: z.boolean(),
   cycleId: z.string(),
+  // Present when the backend joins the Cycle record (GET/POST/PATCH /api/orders all do).
+  cycle: cycleSchema.optional(),
   repeatingOrderId: z.string().nullable(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),

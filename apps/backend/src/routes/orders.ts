@@ -10,7 +10,10 @@ export const ordersRouter = Router();
 
 ordersRouter.use(requireAuth);
 
-export const orderInclude = { items: { include: { article: true } } } satisfies PrismaTypes.OrderInclude;
+export const orderInclude = {
+  items: { include: { article: true } },
+  cycle: true,
+} satisfies PrismaTypes.OrderInclude;
 
 ordersRouter.get("/", async (req, res) => {
   const parsed = orderListQuerySchema.safeParse(req.query);
