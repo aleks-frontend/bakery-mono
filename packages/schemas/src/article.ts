@@ -11,6 +11,11 @@ export const articleSchema = z.object({
 });
 export type Article = z.infer<typeof articleSchema>;
 
+export const articleWithAvailabilitySchema = articleSchema.extend({
+  availableNow: z.boolean(),
+});
+export type ArticleWithAvailability = z.infer<typeof articleWithAvailabilitySchema>;
+
 export const createArticleSchema = z.object({
   name: z.string().min(1),
   price: z.number().int().positive(),

@@ -13,38 +13,39 @@ import { Switch } from "@/components/ui/switch"
 import { Loader2 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
-import { BreadType } from "@/types/breadType"
-import { useCreateBreadTypeMutation } from "@/hooks/useCreateBreadTypeMutation"
-import { useUpdateBreadTypeMutation } from "@/hooks/useUpdateBreadTypeMutation"
+import type { ArticleWithAvailability } from "@bakery/api-client"
+import { useCreateArticleMutation } from "@/hooks/useCreateArticleMutation"
+import { useUpdateArticleMutation } from "@/hooks/useUpdateArticleMutation"
 
-interface BreadTypeModalProps {
+interface ArticleModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  breadType?: BreadType
+  article?: ArticleWithAvailability
 }
 
-const emptyForm = { name: "", price: "" }
+const emptyForm = { name: "", price: "", capacityPerCycle: "" }
 
-export function BreadTypeModal({ open, onOpenChange, breadType }: BreadTypeModalProps) {
+export function ArticleModal({ open, onOpenChange, article }: ArticleModalProps) {
   const { t } = useTranslation()
-  const isEdit = breadType !== undefined
-  const createMutation = useCreateBreadTypeMutation()
-  const updateMutation = useUpdateBreadTypeMutation()
-  const mutation = isEdit ? updateMutation : createMutation
+  const isEdit = article !== undefined
+  const createMutation = useCreateArticleMutation()
+  const updateMutation = useUpdateArticleMutation()
 
   const [form, setForm] = useState(emptyForm)
   const [available, setAvailable] = useState(true)
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [submitError, setSubmitError] = useState<string | null>(null)
 
   useEffect(() => {
     if (open) {
-      setForm({ name: breadType?.name ?? "", price: breadType ? String(breadType.price) : "" })
-      setAvailable(breadType?.available ?? true)
+      setForm({
+        name: article?.name ?? "",
+        price: article ? String(article.price) : "",
+        capacityPerCycle: article?.capacityPerCycle != null ? String(article.capacityPerCycle) : "",
+      })
+      setAvailable(article?.available ?? true)
       setErrors({})
-      setSubmitError(null)
     }
-  }, [open, breadType])
+  }, [open, article])
 
   const setField = (field: keyof typeof emptyForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -56,34 +57,46 @@ export function BreadTypeModal({ open, onOpenChange, breadType }: BreadTypeModal
     if (!form.name.trim()) newErrors.name = t("Required")
     const price = parseFloat(form.price)
     if (!form.price.trim() || isNaN(price) || price <= 0) newErrors.price = t("Required")
+    if (form.capacityPerCycle.trim()) {
+      const capacity = parseInt(form.capacityPerCycle, 10)
+      if (isNaN(capacity) || capacity <= 0) newErrors.capacityPerCycle = t("Required")
+    }
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = () => {
     if (!validate()) return
-    setSubmitError(null)
 
-    const payload: BreadType = {
-      id: isEdit ? breadType!.id : crypto.randomUUID(),
+    const capacityPerCycle = form.capacityPerCycle.trim()
+      ? parseInt(form.capacityPerCycle, 10)
+      : null
+
+    const fields = {
       name: form.name.trim(),
       price: parseFloat(form.price),
       available,
+      capacityPerCycle,
     }
 
-    mutation.mutate(payload, {
-      onSuccess: () => onOpenChange(false),
-      onError: (err) => setSubmitError(err.message),
-    })
+    const onSuccess = () => onOpenChange(false)
+
+    if (isEdit) {
+      updateMutation.mutate({ id: article.id, input: fields }, { onSuccess })
+    } else {
+      createMutation.mutate(fields, { onSuccess })
+    }
   }
+
+  const mutation = isEdit ? updateMutation : createMutation
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader className="pr-10">
-          <DialogTitle>{isEdit ? t("Edit Bread Type") : t("New Bread Type")}</DialogTitle>
+          <DialogTitle>{isEdit ? t("Edit Article") : t("New Article")}</DialogTitle>
           <DialogDescription>
-            {isEdit ? t("Update bread type details") : t("Add a new bread type to the catalog")}
+            {isEdit ? t("Update article details") : t("Add a new article to the catalog")}
           </DialogDescription>
         </DialogHeader>
 
@@ -94,7 +107,7 @@ export function BreadTypeModal({ open, onOpenChange, breadType }: BreadTypeModal
               className={cn("mt-1", errors.name && "border-destructive")}
               value={form.name}
               onChange={(e) => setField("name", e.target.value)}
-              placeholder={t("Bread type name")}
+              placeholder={t("Article name")}
             />
             {errors.name && <p className="text-xs text-destructive mt-1">{errors.name}</p>}
           </div>
@@ -113,12 +126,29 @@ export function BreadTypeModal({ open, onOpenChange, breadType }: BreadTypeModal
             {errors.price && <p className="text-xs text-destructive mt-1">{errors.price}</p>}
           </div>
 
+          <div>
+            <label className="text-sm font-medium">{t("Capacity per cycle")}</label>
+            <Input
+              className={cn("mt-1", errors.capacityPerCycle && "border-destructive")}
+              type="number"
+              min="1"
+              step="1"
+              value={form.capacityPerCycle}
+              onChange={(e) => setField("capacityPerCycle", e.target.value)}
+              placeholder={t("Unlimited")}
+            />
+            {errors.capacityPerCycle && (
+              <p className="text-xs text-destructive mt-1">{errors.capacityPerCycle}</p>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              {t("Leave empty for unlimited capacity")}
+            </p>
+          </div>
+
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium">{t("Available")}</label>
             <Switch checked={available} onCheckedChange={setAvailable} />
           </div>
-
-          {submitError && <p className="text-sm text-destructive">{submitError}</p>}
         </form>
 
         <DialogFooter className="mt-2 border-t pt-4">
@@ -137,7 +167,7 @@ export function BreadTypeModal({ open, onOpenChange, breadType }: BreadTypeModal
             ) : isEdit ? (
               t("Save Changes")
             ) : (
-              t("Create Bread Type")
+              t("Create Article")
             )}
           </Button>
         </DialogFooter>

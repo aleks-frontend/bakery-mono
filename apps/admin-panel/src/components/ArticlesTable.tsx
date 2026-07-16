@@ -18,17 +18,18 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
-import { BreadType } from "@/types/breadType"
+import type { ArticleWithAvailability } from "@bakery/api-client"
 import { ArrowUpDown, Eye, Trash2 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { useUpdateBreadTypeAvailabilityMutation } from "@/hooks/useUpdateBreadTypeMutation"
+import { useUpdateArticleAvailabilityMutation } from "@/hooks/useUpdateArticleMutation"
+import { cn } from "@/lib/utils"
 
-interface BreadTypesTableProps {
-  breadTypes: BreadType[]
-  onViewDetails: (breadType: BreadType) => void
-  onDeleteBreadType: (breadType: BreadType) => void
-  onSelectionChange?: (selected: BreadType[]) => void
+interface ArticlesTableProps {
+  articles: ArticleWithAvailability[]
+  onViewDetails: (article: ArticleWithAvailability) => void
+  onDeleteArticle: (article: ArticleWithAvailability) => void
+  onSelectionChange?: (selected: ArticleWithAvailability[]) => void
 }
 
 function SelectCheckbox({
@@ -61,36 +62,31 @@ function SelectCheckbox({
   )
 }
 
-export function BreadTypesTable({
-  breadTypes,
+export function ArticlesTable({
+  articles,
   onViewDetails,
-  onDeleteBreadType,
+  onDeleteArticle,
   onSelectionChange,
-}: BreadTypesTableProps) {
+}: ArticlesTableProps) {
   const { t } = useTranslation()
   const [sorting, setSorting] = useState<SortingState>([])
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const [updatingId, setUpdatingId] = useState<string | null>(null)
-  const [availabilityError, setAvailabilityError] = useState<string | null>(null)
 
-  const { mutate: updateAvailability } = useUpdateBreadTypeAvailabilityMutation()
+  const { mutate: updateAvailability } = useUpdateArticleAvailabilityMutation()
 
   const handleAvailabilityToggle = useCallback(
-    (breadType: BreadType) => {
-      setUpdatingId(breadType.id)
-      setAvailabilityError(null)
+    (article: ArticleWithAvailability) => {
+      setUpdatingId(article.id)
       updateAvailability(
-        { ids: [breadType.id], available: !breadType.available },
-        {
-          onSettled: () => setUpdatingId(null),
-          onError: (err) => setAvailabilityError(err.message),
-        }
+        { ids: [article.id], available: !article.available },
+        { onSettled: () => setUpdatingId(null) }
       )
     },
     [updateAvailability]
   )
 
-  const columns: ColumnDef<BreadType>[] = useMemo(
+  const columns: ColumnDef<ArticleWithAvailability>[] = useMemo(
     () => [
       {
         id: "select",
@@ -110,7 +106,7 @@ export function BreadTypesTable({
             <SelectCheckbox
               checked={row.getIsSelected()}
               onChange={(checked) => row.toggleSelected(checked)}
-              ariaLabel={t("Select bread type")}
+              ariaLabel={t("Select article")}
             />
           </div>
         ),
@@ -148,16 +144,47 @@ export function BreadTypesTable({
         ),
       },
       {
+        accessorKey: "capacityPerCycle",
+        header: t("Capacity per cycle"),
+        cell: ({ row }) => {
+          const capacity = row.original.capacityPerCycle
+          return (
+            <div className="text-muted-foreground">
+              {capacity == null ? t("Unlimited") : capacity}
+            </div>
+          )
+        },
+      },
+      {
         accessorKey: "available",
         header: t("Available"),
         cell: ({ row }) => {
-          const breadType = row.original
+          const article = row.original
           return (
             <Switch
-              checked={breadType.available}
-              disabled={updatingId === breadType.id}
-              onCheckedChange={() => handleAvailabilityToggle(breadType)}
+              checked={article.available}
+              disabled={updatingId === article.id}
+              onCheckedChange={() => handleAvailabilityToggle(article)}
             />
+          )
+        },
+      },
+      {
+        accessorKey: "availableNow",
+        header: t("Available now"),
+        cell: ({ row }) => {
+          const availableNow = row.original.availableNow
+          return (
+            <span
+              className={cn(
+                "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                availableNow
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-700"
+              )}
+            >
+              {availableNow ? t("In stock") : t("Sold out")}
+            </span>
           )
         },
       },
@@ -165,13 +192,13 @@ export function BreadTypesTable({
         id: "actions",
         header: t("Actions"),
         cell: ({ row }) => {
-          const breadType = row.original
+          const article = row.original
           return (
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => onViewDetails(breadType)}
+                onClick={() => onViewDetails(article)}
               >
                 <Eye className="h-4 w-4 mr-2" />
                 {t("View details")}
@@ -180,7 +207,7 @@ export function BreadTypesTable({
                 variant="ghost"
                 size="sm"
                 className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={() => onDeleteBreadType(breadType)}
+                onClick={() => onDeleteArticle(article)}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -189,11 +216,11 @@ export function BreadTypesTable({
         },
       },
     ],
-    [t, onViewDetails, onDeleteBreadType, handleAvailabilityToggle, updatingId]
+    [t, onViewDetails, onDeleteArticle, handleAvailabilityToggle, updatingId]
   )
 
   const table = useReactTable({
-    data: breadTypes,
+    data: articles,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -213,18 +240,6 @@ export function BreadTypesTable({
 
   return (
     <div className="space-y-2">
-      {availabilityError && (
-        <div className="flex items-center justify-between rounded-md border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
-          <span>{availabilityError}</span>
-          <button
-            onClick={() => setAvailabilityError(null)}
-            className="ml-4 text-destructive/70 hover:text-destructive"
-            aria-label="Dismiss"
-          >
-            ×
-          </button>
-        </div>
-      )}
       <div className="rounded-md border bg-white">
         <Table>
           <TableHeader>
@@ -263,7 +278,7 @@ export function BreadTypesTable({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  {t("No bread types found.")}
+                  {t("No articles found.")}
                 </TableCell>
               </TableRow>
             )}

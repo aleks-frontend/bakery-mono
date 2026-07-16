@@ -1,13 +1,12 @@
 import { useState, useMemo } from "react"
 import { useTranslation } from "react-i18next"
-import { useBreadTypesQuery } from "@/hooks/useBreadTypesQuery"
-import { useUpdateBreadTypeAvailabilityMutation } from "@/hooks/useUpdateBreadTypeMutation"
-import { useUpdateAcceptingOrdersMutation } from "@/hooks/useUpdateAcceptingOrdersMutation"
-import { useDeleteBreadTypesMutation } from "@/hooks/useDeleteBreadTypesMutation"
-import { BreadTypesTable } from "@/components/BreadTypesTable"
-import { BreadTypeModal } from "@/components/BreadTypeModal"
+import { useArticlesQuery } from "@/hooks/useArticlesQuery"
+import { useUpdateArticleAvailabilityMutation } from "@/hooks/useUpdateArticleMutation"
+import { useDeleteArticleMutation } from "@/hooks/useDeleteArticleMutation"
+import { ArticlesTable } from "@/components/ArticlesTable"
+import { ArticleModal } from "@/components/ArticleModal"
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal"
-import { BreadType } from "@/types/breadType"
+import type { ArticleWithAvailability } from "@bakery/api-client"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -17,21 +16,19 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
-import { Switch } from "@/components/ui/switch"
+import { Loader2 } from "lucide-react"
 import { BulkPanel } from "@/components/BulkPanel"
-import { Loader2, Plus, Search, Trash2, X } from "lucide-react"
+import { Plus, Search, Trash2, X } from "lucide-react"
 
-export function BreadTypesPage() {
+export function ArticlesPage() {
   const { t } = useTranslation()
-  const { data, isLoading, error } = useBreadTypesQuery()
-  const breadTypes = useMemo(() => data?.data ?? [], [data])
-  const acceptingOrders = data?.acceptingOrders ?? false
-  const availabilityMutation = useUpdateBreadTypeAvailabilityMutation()
-  const acceptingMutation = useUpdateAcceptingOrdersMutation()
-  const deleteMutation = useDeleteBreadTypesMutation()
+  const { data, isLoading, error } = useArticlesQuery()
+  const articles = useMemo(() => data ?? [], [data])
+  const availabilityMutation = useUpdateArticleAvailabilityMutation()
+  const deleteMutation = useDeleteArticleMutation()
 
-  const [selectedBreadType, setSelectedBreadType] = useState<BreadType | undefined>()
-  const [selectedBreadTypes, setSelectedBreadTypes] = useState<BreadType[]>([])
+  const [selectedArticle, setSelectedArticle] = useState<ArticleWithAvailability | undefined>()
+  const [selectedArticles, setSelectedArticles] = useState<ArticleWithAvailability[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [idsToDelete, setIdsToDelete] = useState<string[]>([])
@@ -42,54 +39,53 @@ export function BreadTypesPage() {
   const handleBulkAvailabilityChange = (value: "true" | "false") => {
     setBulkAvailability(value)
     availabilityMutation.mutate({
-      ids: selectedBreadTypes.map((b) => b.id),
+      ids: selectedArticles.map((a) => a.id),
       available: value === "true",
     })
   }
 
   const filtered = useMemo(() => {
-    let result = breadTypes
+    let result = articles
 
     if (availabilityFilter === "available") {
-      result = result.filter((b) => b.available)
+      result = result.filter((a) => a.available)
     } else if (availabilityFilter === "unavailable") {
-      result = result.filter((b) => !b.available)
+      result = result.filter((a) => !a.available)
     }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
-      result = result.filter((b) => b.name.toLowerCase().includes(q))
+      result = result.filter((a) => a.name.toLowerCase().includes(q))
     }
 
     return result
-  }, [breadTypes, availabilityFilter, searchQuery])
+  }, [articles, availabilityFilter, searchQuery])
 
-  const handleViewDetails = (breadType: BreadType) => {
-    setSelectedBreadType(breadType)
+  const handleViewDetails = (article: ArticleWithAvailability) => {
+    setSelectedArticle(article)
     setIsModalOpen(true)
   }
 
   const handleAddNew = () => {
-    setSelectedBreadType(undefined)
+    setSelectedArticle(undefined)
     setIsModalOpen(true)
   }
 
-  const handleDeleteBreadType = (breadType: BreadType) => {
-    setIdsToDelete([breadType.id])
+  const handleDeleteArticle = (article: ArticleWithAvailability) => {
+    setIdsToDelete([article.id])
     setDeleteConfirmOpen(true)
   }
 
   const handleBulkDelete = () => {
-    setIdsToDelete(selectedBreadTypes.map((b) => b.id))
+    setIdsToDelete(selectedArticles.map((a) => a.id))
     setDeleteConfirmOpen(true)
   }
-
 
   if (isLoading) {
     return (
       <div className="container mx-auto py-8">
         <div className="flex items-center justify-center h-64">
-          <p className="text-muted-foreground">{t("Loading bread types...")}</p>
+          <p className="text-muted-foreground">{t("Loading articles...")}</p>
         </div>
       </div>
     )
@@ -100,7 +96,7 @@ export function BreadTypesPage() {
       <div className="container mx-auto py-8">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <p className="text-destructive font-medium mb-2">{t("Error loading bread types")}</p>
+            <p className="text-destructive font-medium mb-2">{t("Error loading articles")}</p>
             <p className="text-sm text-muted-foreground">{error.message}</p>
           </div>
         </div>
@@ -112,29 +108,13 @@ export function BreadTypesPage() {
     <div className="container mx-auto py-8 space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("Bread Types")}</h1>
-          <p className="text-muted-foreground">{t("Manage bread types and availability")}</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("Articles")}</h1>
+          <p className="text-muted-foreground">{t("Manage articles and availability")}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            {acceptingMutation.isPending && (
-              <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" aria-hidden />
-            )}
-            <label htmlFor="accepting-orders-toggle" className="text-sm font-medium cursor-pointer">
-              {t("Accepting Orders")}
-            </label>
-            <Switch
-              id="accepting-orders-toggle"
-              checked={acceptingOrders}
-              disabled={acceptingMutation.isPending || isLoading}
-              onCheckedChange={(checked) => acceptingMutation.mutate(checked)}
-            />
-          </div>
-          <Button onClick={handleAddNew}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t("Add Bread Type")}
-          </Button>
-        </div>
+        <Button onClick={handleAddNew}>
+          <Plus className="mr-2 h-4 w-4" />
+          {t("Add Article")}
+        </Button>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
@@ -177,21 +157,21 @@ export function BreadTypesPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            {t("Showing {{count}} of {{total}} bread types", {
+            {t("Showing {{count}} of {{total}} articles", {
               count: filtered.length,
-              total: breadTypes.length,
+              total: articles.length,
             })}
           </p>
         </div>
-        <BreadTypesTable
-          breadTypes={filtered}
+        <ArticlesTable
+          articles={filtered}
           onViewDetails={handleViewDetails}
-          onDeleteBreadType={handleDeleteBreadType}
-          onSelectionChange={setSelectedBreadTypes}
+          onDeleteArticle={handleDeleteArticle}
+          onSelectionChange={setSelectedArticles}
         />
       </div>
 
-      <BulkPanel count={selectedBreadTypes.length}>
+      <BulkPanel count={selectedArticles.length}>
         <div className="flex items-center gap-1.5">
           {availabilityMutation.isPending && (
             <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" aria-hidden />
@@ -213,19 +193,19 @@ export function BreadTypesPage() {
         </Button>
       </BulkPanel>
 
-      <BreadTypeModal
+      <ArticleModal
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
-        breadType={selectedBreadType}
+        article={selectedArticle}
       />
 
       <DeleteConfirmModal
         open={deleteConfirmOpen}
         onOpenChange={setDeleteConfirmOpen}
         ids={idsToDelete}
-        entitySingular={t("bread type")}
-        entityPlural={t("bread types")}
-        onDelete={(ids) => deleteMutation.mutateAsync(ids)}
+        entitySingular={t("article")}
+        entityPlural={t("articles")}
+        onDelete={(ids) => deleteMutation.mutateAsync(ids).then(() => {})}
       />
     </div>
   )

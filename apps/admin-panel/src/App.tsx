@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom"
 import { OrdersPage } from "./app/OrdersPage"
-import { BreadTypesPage } from "./app/BreadTypesPage"
+import { ArticlesPage } from "./app/ArticlesPage"
 import { LoginPage } from "./app/LoginPage"
 import { Header } from "./components/Header"
 import { RequireAuth } from "./components/RequireAuth"
@@ -26,7 +26,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route element={<RequireAuth />}>
               <Route path="/" element={<OrdersPage />} />
-              <Route path="/bread-types" element={<BreadTypesPage />} />
+              <Route path="/articles" element={<ArticlesPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

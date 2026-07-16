@@ -47,8 +47,8 @@ export function Header() {
                   <NavLink to="/" end className={navLinkClass}>
                     {t("Orders")}
                   </NavLink>
-                  <NavLink to="/bread-types" className={navLinkClass}>
-                    {t("Bread Types")}
+                  <NavLink to="/articles" className={navLinkClass}>
+                    {t("Articles")}
                   </NavLink>
                 </nav>
 

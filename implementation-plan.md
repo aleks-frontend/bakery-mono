@@ -84,11 +84,13 @@ Schema note: added `Order.email` (nullable — the old n8n form collected it but
 
 ## Phase 9 — Admin Panel Integration
 
-- [ ] Replace n8n/Sheets calls with `packages/api-client` hooks throughout
+Being done in chunks; see the checklist below for what's actually wired up so far vs. still on n8n.
+
+- [x] Article management UI (CRUD, availability toggle, capacity field) — first chunk, done. Old `BreadTypesPage`/`BreadTypesTable`/`BreadTypeModal`/`useBreadTypesQuery` (n8n-backed) replaced by `ArticlesPage`/`ArticlesTable`/`ArticleModal` at `/articles`, backed entirely by the real backend. Added `packages/api-client/src/http.ts` (shared fetch wrapper, `credentials: "include"` for Better Auth's cookie session) and `src/articles.ts` (`createArticlesClient` + `useArticlesQuery`/`useCreateArticleMutation`/`useUpdateArticleMutation`/`useDeleteArticleMutation`/`useUpdateArticleAvailabilityMutation`, the last composing per-id PATCH calls client-side since the backend has no bulk-availability endpoint). Admin panel's own hooks (`src/hooks/useArticlesQuery.ts` etc.) are thin bindings over a singleton client in `src/lib/apiClient.ts`, keeping the existing per-hook-file import convention. `ManualOrderModal` also switched its article-picker data source to the new backend (its own order *submission* is still n8n, pending the Orders chunk). Dropped the old "Accepting Orders" toggle from this page entirely — that's a `Cycle.status` concept now, to resurface on the Cycle control panel chunk. Verified live end-to-end in a real headless-Chrome run (login → list → create → edit/toggle availability → delete), which also caught and fixed a real bug: `http.ts` special-cased 204 responses without consuming the response body, causing spurious `net::ERR_ABORTED` logging on every delete. Follow-up in the same chunk: added `react-hot-toast` to `apps/admin-panel` (mounted once in `src/main.tsx`) and moved all Article mutation feedback onto it — each `use*ArticleMutation` hook wraps its API call in `toast.promise(...)` (pending/success/error), replacing the inline `submitError`/`availabilityError` state that `ArticleModal.tsx`/`ArticlesTable.tsx` had. `useDeleteArticleMutation` now takes `ids: string[]` uniformly (single delete is just a 1-item array) so bulk and single delete share one code path and one toast. This is now the standing convention for all future CRUD wiring — see root `CLAUDE.md`'s "CRUD feedback" rule.
+- [ ] Replace n8n/Sheets calls with `packages/api-client` hooks throughout (remaining: orders, cycles, repeating orders)
 - [ ] Order list: search/sort/filter/status, backed by the new list endpoint
 - [ ] Order edit UI (admin correcting a customer-reported mistake)
 - [ ] Archive/delete UI
-- [ ] Article management UI (CRUD, availability toggle, capacity field)
 - [ ] Cycle control panel: current cycle status, "Start next cycle" / "Close ordering" / "Mark delivered" buttons
 - [ ] Repeating orders admin list + edit/delete + "Make repeating" action on an order row
 - [ ] Manual order entry form (phone/in-person orders)

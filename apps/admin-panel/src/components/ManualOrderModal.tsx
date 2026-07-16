@@ -19,7 +19,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { useTranslation } from "react-i18next"
 import { Loader2, Plus, X } from "lucide-react"
-import { useBreadTypesQuery } from "@/hooks/useBreadTypesQuery"
+import { useArticlesQuery } from "@/hooks/useArticlesQuery"
 import { useCreateManualOrderMutation } from "@/hooks/useCreateManualOrderMutation"
 import { cn } from "@/lib/utils"
 
@@ -45,7 +45,7 @@ const emptyItem: ItemState = { breadId: "", quantity: 1 }
 
 export function ManualOrderModal({ open, onOpenChange }: ManualOrderModalProps) {
   const { t } = useTranslation()
-  const { data: breadTypesData, isLoading: breadTypesLoading } = useBreadTypesQuery()
+  const { data: articlesData, isLoading: breadTypesLoading } = useArticlesQuery()
   const createMutation = useCreateManualOrderMutation()
 
   const [form, setForm] = useState(emptyForm)
@@ -53,7 +53,7 @@ export function ManualOrderModal({ open, onOpenChange }: ManualOrderModalProps) 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  const breadTypes = useMemo(() => breadTypesData?.data ?? [], [breadTypesData])
+  const breadTypes = useMemo(() => articlesData ?? [], [articlesData])
 
   useEffect(() => {
     if (!open) {
