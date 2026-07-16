@@ -5,6 +5,7 @@ import { toNodeHandler } from "better-auth/node";
 import { auth, trustedOrigins } from "./lib/auth.js";
 import { prisma } from "./lib/prisma.js";
 import { articlesRouter } from "./routes/articles.js";
+import { cyclesRouter } from "./routes/cycles.js";
 import { publicRouter } from "./routes/public.js";
 
 const app = express();
@@ -39,6 +40,7 @@ app.get("/health", async (_req, res) => {
 });
 
 app.use("/api/articles", articlesRouter);
+app.use("/api/cycles", cyclesRouter);
 app.use("/api/public", publicRouter);
 
 app.listen(port, () => {

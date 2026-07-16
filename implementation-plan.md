@@ -58,12 +58,12 @@ Everything else originally in this phase (Dockerfiles, Railway project setup) ha
 
 ## Phase 6 — Core Backend API: Cycles
 
-- [ ] Endpoints: get current cycle, list cycle history
-- [ ] Admin action: "Start next cycle" (pre-fills suggested next open/close/delivery dates, editable before confirm)
-- [ ] Admin action: "Close ordering"
-- [ ] Admin action: "Mark delivered" (→ COMPLETED)
-- [ ] Enforce single-OPEN-cycle invariant at the API level
-- [ ] "Start next cycle" triggers RepeatingOrder cloning (ties into Phase 8)
+- [x] Endpoints: get current cycle, list cycle history — `GET /api/cycles/current`, `GET /api/cycles`, both behind `requireAuth`
+- [x] Admin action: "Start next cycle" (pre-fills suggested next open/close/delivery dates, editable before confirm) — `GET /api/cycles/next-suggestion` returns the pre-fill (shifts the last cycle's window forward 7 days, or falls back to the Saturday/Monday/Wednesday pattern from today if there's no prior cycle); `POST /api/cycles` creates it from whatever dates the admin actually confirms
+- [x] Admin action: "Close ordering" — `PATCH /api/cycles/:id/close`, only succeeds from `OPEN`
+- [x] Admin action: "Mark delivered" (→ COMPLETED) — `PATCH /api/cycles/:id/deliver`, only succeeds from `CLOSED`
+- [x] Enforce single-OPEN-cycle invariant at the API level — `POST /api/cycles` checks for an existing `OPEN` cycle and 409s (on top of the DB partial unique index from Phase 3); duplicate `label` also 409s instead of leaking a raw Prisma error
+- [ ] "Start next cycle" triggers RepeatingOrder cloning — deferred until Phase 8 builds the `RepeatingOrder` CRUD/model support to clone from
 
 ## Phase 7 — Core Backend API: Orders
 
