@@ -4,10 +4,15 @@ export function getCurrentCycle() {
   return prisma.cycle.findFirst({ where: { status: "OPEN" } });
 }
 
-export async function getOrderedQuantitiesByArticle(cycleId: string): Promise<Map<string, number>> {
+export async function getOrderedQuantitiesByArticle(
+  cycleId: string,
+  excludeOrderId?: string,
+): Promise<Map<string, number>> {
   const grouped = await prisma.orderItem.groupBy({
     by: ["articleId"],
-    where: { order: { cycleId } },
+    where: {
+      order: { cycleId, ...(excludeOrderId ? { id: { not: excludeOrderId } } : {}) },
+    },
     _sum: { quantity: true },
   });
 

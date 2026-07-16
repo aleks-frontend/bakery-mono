@@ -57,10 +57,12 @@ model Order {
   id         String      @id @default(cuid())
   recipient  String
   phone      String
+  email      String?
   location   String
   totalPrice Int
   status     OrderStatus @default(NOT_RECEIVED)
   remark     String?
+  archived   Boolean     @default(false)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 

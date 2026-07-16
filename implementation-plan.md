@@ -67,11 +67,13 @@ Everything else originally in this phase (Dockerfiles, Railway project setup) ha
 
 ## Phase 7 — Core Backend API: Orders
 
-- [ ] CRUD endpoints for Order (create, update/edit, delete)
-- [ ] List endpoint with search, sort, filter, and status support (Not received / In Progress / Delivered)
-- [ ] Archive workflow (distinct from delete)
-- [ ] Manual order creation endpoint (admin path, no cycle-open requirement beyond normal validation)
-- [ ] Validate order items against current cycle's article availability/capacity at creation time
+- [x] CRUD endpoints for Order (create, update/edit, delete) — `GET/POST /api/orders`, `GET/PATCH/DELETE /api/orders/:id`, all behind `requireAuth`; server always re-prices items from the live `Article.price` (never trusts a client-supplied price/total), mirroring the snapshotted-`unitPrice` design from Phase 3
+- [x] List endpoint with search, sort, filter, and status support (Not received / In Progress / Delivered) — `GET /api/orders` accepts `status`, `cycleId`, `archived` (defaults to excluding archived), `search` (recipient/phone/location/email, case-insensitive), `sortBy`/`sortDir`
+- [x] Archive workflow (distinct from delete) — `PATCH /api/orders/:id/archive` / `/unarchive` toggle the new `Order.archived` flag; `DELETE` remains a hard delete for invalid orders, per the "no Cancelled status" design in `project-scope.md`
+- [x] Manual order creation endpoint (admin path, no cycle-open requirement beyond normal validation) — `POST /api/orders` takes an explicit `cycleId` and doesn't require that cycle to currently be `OPEN` (the baker can log a late/manual order against a cycle that just closed); this is also the only order-creation path for now, since the public order form still goes through n8n until Phase 13
+- [x] Validate order items against current cycle's article availability/capacity at creation time — `src/lib/orderPricing.ts`'s `priceAndValidateItems`, reusing Phase 5's `computeAvailability`/`getOrderedQuantitiesByArticle`; also re-run on item edits with the order's own prior items excluded from the capacity count, so shrinking/keeping a quantity doesn't self-block — verified live (capacity-exceeded rejection, self-exclusion on edit, and a separate order still correctly blocked)
+
+Schema note: added `Order.email` (nullable — the old n8n form collected it but never persisted it as a column; needed now for Phase 10's customer confirmation email) and `Order.archived` (boolean, default false) via migration `20260716091310_add_order_email_archived`.
 
 ## Phase 8 — Core Backend API: Repeating Orders
 
