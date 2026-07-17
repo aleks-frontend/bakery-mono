@@ -209,6 +209,8 @@
   "Select repeating order": "Ismétlődő rendelés kiválasztása",
   "repeating order": "ismétlődő rendelés",
   "Repeating order": "Ismétlődő rendelés",
+  "Repeat this order every week": "Ismétlődjön ez a rendelés minden héten",
+  "Get this same order automatically every week — you won't need to submit it again unless you want to change or cancel it.": "Automatikusan megkapja ugyanezt a rendelést minden héten — nem kell újra elküldenie, hacsak nem szeretné módosítani vagy lemondani.",
   "repeating orders": "ismétlődő rendelések",
   "Error loading repeating orders": "Hiba az ismétlődő rendelések betöltésekor",
   "Creating repeating order...": "Ismétlődő rendelés létrehozása...",

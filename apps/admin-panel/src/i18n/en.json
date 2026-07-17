@@ -209,6 +209,8 @@
   "Select repeating order": "Select repeating order",
   "repeating order": "repeating order",
   "Repeating order": "Repeating order",
+  "Repeat this order every week": "Repeat this order every week",
+  "Get this same order automatically every week — you won't need to submit it again unless you want to change or cancel it.": "Get this same order automatically every week — you won't need to submit it again unless you want to change or cancel it.",
   "repeating orders": "repeating orders",
   "Error loading repeating orders": "Error loading repeating orders",
   "Creating repeating order...": "Creating repeating order...",

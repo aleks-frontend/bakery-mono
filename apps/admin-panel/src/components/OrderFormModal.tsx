@@ -23,6 +23,7 @@ import { useArticlesQuery } from "@/hooks/useArticlesQuery"
 import { useCurrentCycleQuery } from "@/hooks/useCurrentCycleQuery"
 import { useCreateOrderMutation } from "@/hooks/useCreateOrderMutation"
 import { useUpdateOrderMutation } from "@/hooks/useUpdateOrderMutation"
+import { useMakeRepeatingMutation } from "@/hooks/useMakeRepeatingMutation"
 import { cn } from "@/lib/utils"
 import type { Order } from "@bakery/api-client"
 import { OrderItemsEditor, type OrderItemState } from "@/components/OrderItemsEditor"
@@ -54,10 +55,12 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
   const { data: currentCycle, isLoading: cycleLoading } = useCurrentCycleQuery()
   const createMutation = useCreateOrderMutation()
   const updateMutation = useUpdateOrderMutation()
+  const makeRepeatingMutation = useMakeRepeatingMutation()
   const mutation = isEdit ? updateMutation : createMutation
 
   const [form, setForm] = useState(emptyForm)
   const [items, setItems] = useState<ItemState[]>([{ ...emptyItem }])
+  const [repeat, setRepeat] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const articles = useMemo(() => articlesData ?? [], [articlesData])
@@ -76,6 +79,7 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
           ? order.items.map((item) => ({ articleId: item.articleId, quantity: item.quantity }))
           : [{ articleId: articles[0]?.id ?? "", quantity: 1 }]
       )
+      setRepeat(false)
       setErrors({})
     }
     // Deliberately excludes `articles`: it's only read for its current value
@@ -146,12 +150,18 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
       items: items.map((item) => ({ articleId: item.articleId, quantity: item.quantity })),
     }
 
-    const onSuccess = () => onOpenChange(false)
-
     if (isEdit) {
-      updateMutation.mutate({ id: order.id, input: fields }, { onSuccess })
+      updateMutation.mutate({ id: order.id, input: fields }, { onSuccess: () => onOpenChange(false) })
     } else {
-      createMutation.mutate({ ...fields, cycleId: currentCycle!.id }, { onSuccess })
+      createMutation.mutate(
+        { ...fields, cycleId: currentCycle!.id },
+        {
+          onSuccess: (createdOrder) => {
+            if (repeat) makeRepeatingMutation.mutate(createdOrder.id)
+            onOpenChange(false)
+          },
+        }
+      )
     }
   }
 
@@ -258,6 +268,26 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
             <span>{t("Total Price")}</span>
             <span>{totalPrice} {t("RSD")}</span>
           </div>
+
+          {!isEdit && (
+            <>
+              <Separator />
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={repeat}
+                  onChange={(e) => setRepeat(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-input accent-primary shrink-0"
+                />
+                <span>
+                  <span className="block text-sm font-medium">{t("Repeat this order every week")}</span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">
+                    {t("Get this same order automatically every week — you won't need to submit it again unless you want to change or cancel it.")}
+                  </span>
+                </span>
+              </label>
+            </>
+          )}
         </form>
 
         <DialogFooter className="mt-2 flex w-full flex-col border-t pt-4 sm:flex-col">

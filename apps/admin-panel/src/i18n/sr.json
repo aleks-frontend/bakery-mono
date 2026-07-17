@@ -209,6 +209,8 @@
   "Select repeating order": "Izaberi ponavljajuću porudžbinu",
   "repeating order": "ponavljajuća porudžbina",
   "Repeating order": "Ponavljajuća porudžbina",
+  "Repeat this order every week": "Ponavljaj ovu porudžbinu svake nedelje",
+  "Get this same order automatically every week — you won't need to submit it again unless you want to change or cancel it.": "Dobijaćete ovu istu porudžbinu automatski svake nedelje — nećete morati ponovo da je šaljete, osim ako želite da je izmenite ili otkažete.",
   "repeating orders": "ponavljajuće porudžbine",
   "Error loading repeating orders": "Greška pri učitavanju ponavljajućih porudžbina",
   "Creating repeating order...": "Kreiranje ponavljajuće porudžbine...",
