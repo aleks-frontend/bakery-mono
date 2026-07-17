@@ -13,8 +13,9 @@ import { StatusBadge } from "./StatusBadge"
 import { OrderFormModal } from "./OrderFormModal"
 import { Separator } from "@/components/ui/separator"
 import { useTranslation } from "react-i18next"
-import { Archive, ArchiveRestore, FileDown, Pencil, Trash2 } from "lucide-react"
+import { Archive, ArchiveRestore, FileDown, Pencil, Repeat, Trash2 } from "lucide-react"
 import type { ReceiptPdfLabels } from "@/components/OrderReceiptPdf"
+import { cn } from "@/lib/utils"
 
 interface OrderDetailsModalProps {
   order: Order | null
@@ -22,6 +23,7 @@ interface OrderDetailsModalProps {
   onOpenChange: (open: boolean) => void
   onDeleteOrder: (order: Order) => void
   onToggleArchive: (order: Order) => void
+  onMakeRepeating: (order: Order) => void
 }
 
 export function OrderDetailsModal({
@@ -30,6 +32,7 @@ export function OrderDetailsModal({
   onOpenChange,
   onDeleteOrder,
   onToggleArchive,
+  onMakeRepeating,
 }: OrderDetailsModalProps) {
   const { t } = useTranslation()
   const [pdfLoading, setPdfLoading] = useState(false)
@@ -172,6 +175,19 @@ export function OrderDetailsModal({
           >
             <Pencil className="size-5 shrink-0" aria-hidden />
             {t("Edit Order")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={() => onMakeRepeating(currentOrder)}
+            className={cn(
+              "w-full gap-2.5 font-semibold text-base",
+              currentOrder.repeatingOrderId && "text-destructive border-destructive/30 hover:bg-destructive/10"
+            )}
+          >
+            <Repeat className="size-5 shrink-0" aria-hidden />
+            {currentOrder.repeatingOrderId ? t("Stop Repeating") : t("Make Repeating")}
           </Button>
           <Button
             type="button"

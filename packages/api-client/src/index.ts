@@ -21,6 +21,12 @@ export {
   useNextCycleSuggestionQuery,
 } from "./cycles.js";
 export type { CyclesClient, RepeatingOrderCloneResult, StartCycleResult } from "./cycles.js";
+export {
+  createRepeatingOrdersClient,
+  useRepeatingOrdersQuery,
+  repeatingOrdersQueryKey,
+} from "./repeatingOrders.js";
+export type { RepeatingOrdersClient } from "./repeatingOrders.js";
 export type { Article, ArticleWithAvailability, CreateArticleInput, UpdateArticleInput } from "@bakery/schemas";
 export type {
   Order,
@@ -30,3 +36,9 @@ export type {
   UpdateOrderInput,
 } from "@bakery/schemas";
 export type { Cycle, CycleStatus, CycleSuggestion, StartCycleInput } from "@bakery/schemas";
+export type {
+  RepeatingOrder,
+  RepeatingOrderItem,
+  CreateRepeatingOrderInput,
+  UpdateRepeatingOrderInput,
+} from "@bakery/schemas";

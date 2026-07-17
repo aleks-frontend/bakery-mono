@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { CreateOrderInput, Order, OrderStatus, UpdateOrderInput } from "@bakery/schemas";
+import type { CreateOrderInput, Order, OrderStatus, RepeatingOrder, UpdateOrderInput } from "@bakery/schemas";
 import type { HttpClient } from "./http.js";
 
 export interface OrdersListParams {
@@ -19,6 +19,7 @@ export interface OrdersClient {
   remove(id: string): Promise<void>;
   archive(id: string): Promise<Order>;
   unarchive(id: string): Promise<Order>;
+  makeRepeating(id: string): Promise<RepeatingOrder>;
 }
 
 function buildQuery(params?: OrdersListParams): string {
@@ -43,6 +44,8 @@ export function createOrdersClient(http: HttpClient): OrdersClient {
     remove: (id) => http.request<void>(`/api/orders/${id}`, { method: "DELETE" }),
     archive: (id) => http.request<Order>(`/api/orders/${id}/archive`, { method: "PATCH" }),
     unarchive: (id) => http.request<Order>(`/api/orders/${id}/unarchive`, { method: "PATCH" }),
+    makeRepeating: (id) =>
+      http.request<RepeatingOrder>(`/api/orders/${id}/make-repeating`, { method: "POST" }),
   };
 }
 

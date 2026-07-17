@@ -16,7 +16,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { StatusDropdown } from "./StatusDropdown";
 import type { Order, OrderStatus, OrdersListParams } from "@bakery/api-client";
-import { Archive, ArchiveRestore, ArrowUpDown, Eye, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowUpDown, Eye, Repeat, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateOrderMutation } from "@/hooks/useUpdateOrderMutation";
@@ -31,6 +32,7 @@ interface OrdersTableProps {
   onViewDetails: (order: Order) => void;
   onDeleteOrder: (order: Order) => void;
   onToggleArchive: (order: Order) => void;
+  onMakeRepeating: (order: Order) => void;
   onSelectionChange?: (selectedOrders: Order[]) => void;
 }
 
@@ -100,6 +102,7 @@ export function OrdersTable({
   onViewDetails,
   onDeleteOrder,
   onToggleArchive,
+  onMakeRepeating,
   onSelectionChange,
 }: OrdersTableProps) {
   const { t } = useTranslation();
@@ -151,7 +154,19 @@ export function OrdersTable({
             onSortChange={onSortChange}
           />
         ),
-        cell: ({ row }) => <div className="font-medium">{row.getValue("recipient")}</div>,
+        cell: ({ row }) => {
+          const order = row.original;
+          return (
+            <div className="flex items-center gap-1.5 font-medium">
+              {order.repeatingOrderId && (
+                <span title={t("Repeating order")}>
+                  <Repeat className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+                </span>
+              )}
+              <span className="truncate">{order.recipient}</span>
+            </div>
+          );
+        },
       },
       {
         accessorKey: "phone",
@@ -229,6 +244,19 @@ export function OrdersTable({
               <Button
                 variant="ghost"
                 size="sm"
+                className={cn(
+                  order.repeatingOrderId
+                    ? "text-destructive hover:text-destructive hover:bg-destructive/10"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => onMakeRepeating(order)}
+                title={order.repeatingOrderId ? t("Stop Repeating") : t("Make Repeating")}
+              >
+                <Repeat className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 className="text-muted-foreground hover:text-foreground"
                 onClick={() => onToggleArchive(order)}
                 title={order.archived ? t("Unarchive Order") : t("Archive Order")}
@@ -248,7 +276,18 @@ export function OrdersTable({
         },
       },
     ],
-    [t, sortBy, sortDir, onSortChange, onViewDetails, onDeleteOrder, onToggleArchive, handleStatusChange, updatingOrderId]
+    [
+      t,
+      sortBy,
+      sortDir,
+      onSortChange,
+      onViewDetails,
+      onDeleteOrder,
+      onToggleArchive,
+      onMakeRepeating,
+      handleStatusChange,
+      updatingOrderId,
+    ]
   );
 
   const table = useReactTable({

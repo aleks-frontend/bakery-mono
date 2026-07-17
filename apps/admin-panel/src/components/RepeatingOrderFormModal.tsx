@@ -20,17 +20,16 @@ import { Separator } from "@/components/ui/separator"
 import { useTranslation } from "react-i18next"
 import { Loader2 } from "lucide-react"
 import { useArticlesQuery } from "@/hooks/useArticlesQuery"
-import { useCurrentCycleQuery } from "@/hooks/useCurrentCycleQuery"
-import { useCreateOrderMutation } from "@/hooks/useCreateOrderMutation"
-import { useUpdateOrderMutation } from "@/hooks/useUpdateOrderMutation"
+import { useCreateRepeatingOrderMutation } from "@/hooks/useCreateRepeatingOrderMutation"
+import { useUpdateRepeatingOrderMutation } from "@/hooks/useUpdateRepeatingOrderMutation"
 import { cn } from "@/lib/utils"
-import type { Order } from "@bakery/api-client"
+import type { RepeatingOrder } from "@bakery/api-client"
 import { OrderItemsEditor, type OrderItemState } from "@/components/OrderItemsEditor"
 
-interface OrderFormModalProps {
+interface RepeatingOrderFormModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  order?: Order
+  repeatingOrder?: RepeatingOrder
 }
 
 type ItemState = OrderItemState
@@ -47,13 +46,12 @@ const emptyForm = {
 
 const emptyItem: ItemState = { articleId: "", quantity: 1 }
 
-export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProps) {
+export function RepeatingOrderFormModal({ open, onOpenChange, repeatingOrder }: RepeatingOrderFormModalProps) {
   const { t } = useTranslation()
-  const isEdit = order !== undefined
+  const isEdit = repeatingOrder !== undefined
   const { data: articlesData, isLoading: articlesLoading } = useArticlesQuery()
-  const { data: currentCycle, isLoading: cycleLoading } = useCurrentCycleQuery()
-  const createMutation = useCreateOrderMutation()
-  const updateMutation = useUpdateOrderMutation()
+  const createMutation = useCreateRepeatingOrderMutation()
+  const updateMutation = useUpdateRepeatingOrderMutation()
   const mutation = isEdit ? updateMutation : createMutation
 
   const [form, setForm] = useState(emptyForm)
@@ -65,27 +63,23 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
   useEffect(() => {
     if (open) {
       setForm({
-        recipient: order?.recipient ?? "",
-        phone: order?.phone ?? "",
-        email: order?.email ?? "",
-        location: order?.location ?? "",
-        remark: order?.remark ?? "",
+        recipient: repeatingOrder?.recipient ?? "",
+        phone: repeatingOrder?.phone ?? "",
+        email: repeatingOrder?.email ?? "",
+        location: repeatingOrder?.location ?? "",
+        remark: repeatingOrder?.remark ?? "",
       })
       setItems(
-        order?.items?.length
-          ? order.items.map((item) => ({ articleId: item.articleId, quantity: item.quantity }))
+        repeatingOrder?.items?.length
+          ? repeatingOrder.items.map((item) => ({ articleId: item.articleId, quantity: item.quantity }))
           : [{ articleId: articles[0]?.id ?? "", quantity: 1 }]
       )
       setErrors({})
     }
-    // Deliberately excludes `articles`: it's only read for its current value
-    // when the modal opens. Including it would re-run this reset whenever the
-    // article list changes while the modal is open, wiping user-entered items.
+    // Deliberately excludes `articles` — see OrderFormModal's identical effect for why.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, order])
+  }, [open, repeatingOrder])
 
-  // Covers the case where the article list finishes loading after the modal
-  // is already open and an item still has no selection.
   useEffect(() => {
     if (articles.length > 0) {
       setItems((prev) =>
@@ -112,13 +106,6 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
     setItems((prev) => prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)))
   }
 
-  const getItemTotal = (item: ItemState) => {
-    const article = articles.find((a) => a.id === item.articleId)
-    return article ? article.price * item.quantity : 0
-  }
-
-  const totalPrice = items.reduce((sum, item) => sum + getItemTotal(item), 0)
-
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {}
     if (!form.recipient.trim()) newErrors.recipient = t("Required")
@@ -129,7 +116,6 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
       if (!item.articleId) newErrors[`item_${i}_article`] = t("Required")
       if (item.quantity < 1) newErrors[`item_${i}_qty`] = t("Required")
     })
-    if (!isEdit && !currentCycle) newErrors.cycle = t("No cycle is currently open")
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -149,29 +135,23 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
     const onSuccess = () => onOpenChange(false)
 
     if (isEdit) {
-      updateMutation.mutate({ id: order.id, input: fields }, { onSuccess })
+      updateMutation.mutate({ id: repeatingOrder.id, input: fields }, { onSuccess })
     } else {
-      createMutation.mutate({ ...fields, cycleId: currentCycle!.id }, { onSuccess })
+      createMutation.mutate(fields, { onSuccess })
     }
   }
-
-  const isLoadingDeps = articlesLoading || (!isEdit && cycleLoading)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="pr-10">
-          <DialogTitle>{isEdit ? t("Edit Order") : t("Manual Order")}</DialogTitle>
+          <DialogTitle>{isEdit ? t("Edit Repeating Order") : t("New Repeating Order")}</DialogTitle>
           <DialogDescription>
-            {isEdit ? t("Update order details") : t("Create a new order manually")}
+            {isEdit ? t("Update repeating order details") : t("Add a new standing weekly order")}
           </DialogDescription>
         </DialogHeader>
 
         <form autoComplete="off" onSubmit={(e) => e.preventDefault()} className="space-y-6 py-2">
-          {!isEdit && !cycleLoading && !currentCycle && (
-            <p className="text-sm text-destructive">{t("No cycle is currently open")}</p>
-          )}
-
           {/* Customer info */}
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
@@ -225,15 +205,14 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
 
           <Separator />
 
-          {/* Order items */}
+          {/* Repeating items */}
           <div>
             <p className="text-sm font-medium mb-3">{t("Ordered Articles")}</p>
             <OrderItemsEditor
               items={items}
               articles={articles}
               errors={errors}
-              isLoading={isLoadingDeps}
-              showPricing
+              isLoading={articlesLoading}
               onUpdateItem={updateItem}
               onAddItem={addItem}
               onRemoveItem={removeItem}
@@ -252,31 +231,25 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
               className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-none"
             />
           </div>
-
-          {/* Total */}
-          <div className="flex justify-between items-center font-semibold text-sm">
-            <span>{t("Total Price")}</span>
-            <span>{totalPrice} {t("RSD")}</span>
-          </div>
         </form>
 
-        <DialogFooter className="mt-2 flex w-full flex-col border-t pt-4 sm:flex-col">
+        <DialogFooter className="mt-2 border-t pt-4">
           <Button
             type="button"
             size="lg"
-            disabled={mutation.isPending || (!isEdit && !currentCycle)}
+            disabled={mutation.isPending}
             onClick={handleSubmit}
             className="w-full font-semibold text-base"
           >
             {mutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {t("Creating...")}
+                {t("Saving...")}
               </>
             ) : isEdit ? (
               t("Save Changes")
             ) : (
-              t("Create Order")
+              t("Create Repeating Order")
             )}
           </Button>
         </DialogFooter>

@@ -53,6 +53,9 @@ export function Header() {
                   <NavLink to="/cycles" className={navLinkClass}>
                     {t("Cycles")}
                   </NavLink>
+                  <NavLink to="/repeating-orders" className={navLinkClass}>
+                    {t("Repeating Orders")}
+                  </NavLink>
                 </nav>
 
                 <BackendHealthBadge />

@@ -5,6 +5,8 @@ import { useBulkUpdateOrderStatusMutation } from "@/hooks/useUpdateOrderMutation
 import { useDeleteOrderMutation } from "@/hooks/useDeleteOrderMutation"
 import { useArchiveOrderMutation } from "@/hooks/useArchiveOrderMutation"
 import { useUnarchiveOrderMutation } from "@/hooks/useUnarchiveOrderMutation"
+import { useMakeRepeatingMutation } from "@/hooks/useMakeRepeatingMutation"
+import { useDeleteRepeatingOrderMutation } from "@/hooks/useDeleteRepeatingOrderMutation"
 import { OrdersTable } from "@/components/OrdersTable"
 import { OrderDetailsModal } from "@/components/OrderDetailsModal"
 import { OrderFormModal } from "@/components/OrderFormModal"
@@ -56,6 +58,8 @@ export function OrdersPage() {
   const deleteOrdersMutation = useDeleteOrderMutation()
   const archiveOrdersMutation = useArchiveOrderMutation()
   const unarchiveOrdersMutation = useUnarchiveOrderMutation()
+  const makeRepeatingMutation = useMakeRepeatingMutation()
+  const deleteRepeatingOrderMutation = useDeleteRepeatingOrderMutation()
 
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
   // Derived from the live query result (not a captured snapshot) so edits/status
@@ -69,6 +73,8 @@ export function OrdersPage() {
   const [orderIdsToDelete, setOrderIdsToDelete] = useState<string[]>([])
   const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false)
   const [orderIdsToArchive, setOrderIdsToArchive] = useState<string[]>([])
+  const [unrepeatConfirmOpen, setUnrepeatConfirmOpen] = useState(false)
+  const [repeatingOrderIdsToDelete, setRepeatingOrderIdsToDelete] = useState<string[]>([])
   const [bulkStatus, setBulkStatus] = useState<OrderStatus | "">("")
   const [workshopPdfLoading, setWorkshopPdfLoading] = useState(false)
   const [xlsLoading, setXlsLoading] = useState(false)
@@ -111,6 +117,20 @@ export function OrdersPage() {
     } else {
       setOrderIdsToArchive([order.id])
       setArchiveConfirmOpen(true)
+    }
+  }
+
+  // Making repeating creates a new RepeatingOrder template right away, so it
+  // applies immediately with no confirmation. Un-repeating deletes that whole
+  // template (there's no way to unlink just this one order without a new
+  // endpoint), which also affects any other orders cloned from the same
+  // template — that's destructive enough to confirm first.
+  const handleMakeRepeating = (order: Order) => {
+    if (order.repeatingOrderId) {
+      setRepeatingOrderIdsToDelete([order.repeatingOrderId])
+      setUnrepeatConfirmOpen(true)
+    } else {
+      makeRepeatingMutation.mutate(order.id)
     }
   }
 
@@ -269,6 +289,7 @@ export function OrdersPage() {
           onViewDetails={handleViewDetails}
           onDeleteOrder={handleDeleteOrder}
           onToggleArchive={handleToggleArchive}
+          onMakeRepeating={handleMakeRepeating}
           onSelectionChange={setSelectedOrders}
         />
       </div>
@@ -328,6 +349,7 @@ export function OrdersPage() {
         onOpenChange={setIsDetailsModalOpen}
         onDeleteOrder={handleDeleteOrder}
         onToggleArchive={handleToggleArchive}
+        onMakeRepeating={handleMakeRepeating}
       />
 
       <OrderFormModal
@@ -353,6 +375,15 @@ export function OrdersPage() {
         entityPlural={t("orders")}
         onArchive={(ids) => archiveOrdersMutation.mutateAsync(ids).then(() => {})}
         onSuccess={() => setIsDetailsModalOpen(false)}
+      />
+
+      <DeleteConfirmModal
+        open={unrepeatConfirmOpen}
+        onOpenChange={setUnrepeatConfirmOpen}
+        ids={repeatingOrderIdsToDelete}
+        entitySingular={t("repeating order")}
+        entityPlural={t("repeating orders")}
+        onDelete={(ids) => deleteRepeatingOrderMutation.mutateAsync(ids).then(() => {})}
       />
     </div>
   )

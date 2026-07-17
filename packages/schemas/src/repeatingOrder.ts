@@ -1,10 +1,13 @@
 import { z } from "zod";
+import { articleSchema } from "./article.js";
 import { orderItemInputSchema } from "./order.js";
 
 export const repeatingOrderItemSchema = z.object({
   id: z.string(),
   articleId: z.string(),
   quantity: z.number().int().positive(),
+  // Present when the backend joins the Article record (all repeating-order routes do).
+  article: articleSchema.optional(),
 });
 export type RepeatingOrderItem = z.infer<typeof repeatingOrderItemSchema>;
 
