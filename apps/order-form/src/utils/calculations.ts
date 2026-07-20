@@ -1,4 +1,4 @@
-import type { BreadType } from '@/types/orderTypes'
+import type { PublicArticle } from '@bakery/api-client'
 
 export function getItemTotal(unitPrice: number, quantity: number): number {
   return unitPrice * quantity
@@ -13,9 +13,9 @@ export function getTotalPrice(
   )
 }
 
-export function findBreadById(
-  breadTypes: BreadType[],
-  breadId: string
-): BreadType | undefined {
-  return breadTypes.find((b) => b.id === breadId)
+export function findArticleById(
+  articles: PublicArticle[],
+  articleId: string
+): PublicArticle | undefined {
+  return articles.find((a) => a.id === articleId)
 }

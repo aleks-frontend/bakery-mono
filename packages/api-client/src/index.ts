@@ -27,13 +27,17 @@ export {
   repeatingOrdersQueryKey,
 } from "./repeatingOrders.js";
 export type { RepeatingOrdersClient } from "./repeatingOrders.js";
+export { createPublicClient, usePublicArticlesQuery, publicArticlesQueryKey } from "./public.js";
+export type { PublicClient } from "./public.js";
 export type { Article, ArticleWithAvailability, CreateArticleInput, UpdateArticleInput } from "@bakery/schemas";
+export type { PublicArticle, PublicArticlesResponse } from "@bakery/schemas";
 export type {
   Order,
   OrderItem,
   OrderStatus,
   CreateOrderInput,
   UpdateOrderInput,
+  CreatePublicOrderInput,
 } from "@bakery/schemas";
 export type { Cycle, CycleStatus, CycleSuggestion, StartCycleInput } from "@bakery/schemas";
 export type {

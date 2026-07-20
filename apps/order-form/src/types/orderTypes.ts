@@ -1,51 +1,32 @@
-export interface BreadType {
-  id: string
-  name: string
-  price: number
-  available: boolean
-}
+export type LocationOption = 'Hajdukovo' | 'Subotica'
 
-export interface BreadTypesResponse {
-  acceptingOrders: boolean
-  data: BreadType[]
-}
-
-export interface Customer {
-  firstName: string
-  lastName: string
-  phone: string
+export interface PersistedCustomer {
+  recipient: string
   email: string
+  phone: string
+  location: string
 }
 
-export interface OrderItemPayload {
-  breadId: string
-  breadName: string
+/**
+ * Display-only shape for the pre-submit confirmation modal — carries article
+ * names/prices/totals the API payload (CreatePublicOrderInput) doesn't need,
+ * since the backend always re-prices items from the live Article record.
+ */
+export interface OrderSummaryItem {
+  articleId: string
+  name: string
   quantity: number
   unitPrice: number
   total: number
 }
 
-export interface OrderPayload {
-  customer: Customer
-  items: OrderItemPayload[]
-  totalPrice: number
-  submittedAt: string
+export interface OrderSummary {
+  recipient: string
+  phone: string
+  email: string | null
   location: string
   remark: string | null
-  language: string
-}
-
-export interface OrderSubmitResponse {
-  ok?: boolean
-  [key: string]: unknown
-}
-
-export type LocationOption = 'subotica' | 'hajdukovo'
-
-export interface PersistedCustomer {
-  firstName: string
-  lastName: string
-  email: string
-  phone: string
-  location: string
+  repeat: boolean
+  items: OrderSummaryItem[]
+  totalPrice: number
 }

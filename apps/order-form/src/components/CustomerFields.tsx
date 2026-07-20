@@ -16,8 +16,8 @@ interface CustomerFieldsProps {
 }
 
 const LOCATION_OPTIONS = [
-  { value: "subotica", labelKey: "Subotica" as const },
-  { value: "hajdukovo", labelKey: "Hajdukovo" as const },
+  { value: "Subotica", labelKey: "Subotica" as const },
+  { value: "Hajdukovo", labelKey: "Hajdukovo" as const },
 ] as const;
 
 export function CustomerFields({
@@ -38,29 +38,15 @@ export function CustomerFields({
   return (
     <>
       <label className="block font-medium">
-        <span className="block">{t("First name")}</span>
+        <span className="block">{t("First and last name")}</span>
         <input
           type="text"
-          {...register("firstName")}
+          {...register("recipient")}
           className="mt-1.5 w-full py-2.5 px-3 rounded-[10px] border border-bakery-border text-[0.95rem] transition-colors focus:outline-none focus:border-bakery-primary focus:shadow-focus bg-white"
         />
-        {errors.firstName?.message && (
+        {errors.recipient?.message && (
           <span className="text-red-600 text-sm mt-1 block">
-            {errors.firstName.message}
-          </span>
-        )}
-      </label>
-
-      <label className="block mt-4 font-medium">
-        <span className="block">{t("Last name")}</span>
-        <input
-          type="text"
-          {...register("lastName")}
-          className="mt-1.5 w-full py-2.5 px-3 rounded-[10px] border border-bakery-border text-[0.95rem] transition-colors focus:outline-none focus:border-bakery-primary focus:shadow-focus bg-white"
-        />
-        {errors.lastName?.message && (
-          <span className="text-red-600 text-sm mt-1 block">
-            {errors.lastName.message}
+            {errors.recipient.message}
           </span>
         )}
       </label>

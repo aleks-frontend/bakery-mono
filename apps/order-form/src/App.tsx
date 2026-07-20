@@ -1,20 +1,16 @@
 import { useTranslation } from "react-i18next";
-import { useBreadTypes } from "@/hooks/useBreadTypes";
+import { useArticlesQuery } from "@/hooks/useArticlesQuery";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { OrderStatusBanner } from "@/components/OrderStatusBanner";
 import { OrderForm } from "@/components/OrderForm";
 import { Spinner } from "@/components/Spinner";
 
-// Set to a future Date when baker is on holiday, null otherwise.
-// Use the /baker-holiday skill to update this.
-const HOLIDAY_UNTIL: Date | null = new Date("2026-07-18");
-
 function App() {
   const { t } = useTranslation();
-  const { breadTypes, isLoading, acceptingOrders } = useBreadTypes();
+  const { data, isLoading, isError } = useArticlesQuery();
 
-  const isOnHoliday = HOLIDAY_UNTIL !== null && new Date() < HOLIDAY_UNTIL;
-  const effectiveAcceptingOrders = !isOnHoliday && acceptingOrders;
+  const acceptingOrders = data?.acceptingOrders ?? false;
+  const articles = (data?.articles ?? []).filter((a) => a.available);
 
   return (
     <>
@@ -37,19 +33,25 @@ function App() {
         </div>
       </header>
 
-      <OrderStatusBanner
-        show={!effectiveAcceptingOrders}
-        reopenDate={isOnHoliday ? HOLIDAY_UNTIL : undefined}
-        holidayMessage={isOnHoliday ? t("Our ovens are taking a summer break — back soon with fresh loaves! ☀️🏖️") : undefined}
-      />
+      {isError ? (
+        <div className="max-w-[720px] mx-auto my-6 bg-red-50 border-2 border-red-400 rounded-xl py-5 px-6 text-red-900 text-center">
+          {t("Something went wrong loading the order form. Please try again in a moment.")}
+        </div>
+      ) : (
+        <OrderStatusBanner
+          show={!isLoading && !acceptingOrders}
+          reopenDate={data?.reopenDate ?? undefined}
+          holidayMessage={data?.holidayMessage ?? undefined}
+        />
+      )}
 
       {isLoading ? (
         <div className="flex justify-center items-center py-8">
           <Spinner />
         </div>
-      ) : (
-        <OrderForm breadTypes={breadTypes} acceptingOrders={effectiveAcceptingOrders} />
-      )}
+      ) : !isError ? (
+        <OrderForm articles={articles} acceptingOrders={acceptingOrders} />
+      ) : null}
     </>
   );
 }

@@ -12,8 +12,7 @@ export function usePersistedCustomer() {
       if (parsed === null || typeof parsed !== 'object') return null
       const obj = parsed as Record<string, unknown>
       return {
-        firstName: typeof obj.firstName === 'string' ? obj.firstName : undefined,
-        lastName: typeof obj.lastName === 'string' ? obj.lastName : undefined,
+        recipient: typeof obj.recipient === 'string' ? obj.recipient : undefined,
         email: typeof obj.email === 'string' ? obj.email : undefined,
         phone: typeof obj.phone === 'string' ? obj.phone : undefined,
         location: typeof obj.location === 'string' ? obj.location : undefined,

@@ -1,34 +1,22 @@
-import { useMutation } from '@tanstack/react-query'
-import { submitOrder } from '@/services/api'
-import type { OrderPayload, OrderSubmitResponse } from '@/types/orderTypes'
-import { orderSubmitResponseSchema } from '@/schemas/orderSchemas'
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import toast from "react-hot-toast"
+import { useTranslation } from "react-i18next"
+import { publicArticlesQueryKey, type CreatePublicOrderInput } from "@bakery/api-client"
+import { publicClient } from "@/lib/apiClient"
 
-export interface UseSubmitOrderOptions {
-  onSuccess?: () => void
-  onError?: (message: string) => void
-}
+export function useSubmitOrder() {
+  const queryClient = useQueryClient()
+  const { t } = useTranslation()
 
-export function useSubmitOrder(options: UseSubmitOrderOptions = {}) {
-  const mutation = useMutation({
-    mutationFn: async (payload: OrderPayload): Promise<OrderSubmitResponse> => {
-      const res = await submitOrder(payload)
-      const parsed = orderSubmitResponseSchema.safeParse(res)
-      if (!parsed.success) {
-        throw new Error('Invalid submit response')
-      }
-      return res
-    },
-    onSuccess: options.onSuccess,
-    onError: (error: Error) => {
-      const message = error?.message ?? 'An error occurred. Please try again.'
-      options.onError?.(message)
-    },
+  return useMutation({
+    mutationFn: (input: CreatePublicOrderInput) =>
+      toast.promise(publicClient.createOrder(input), {
+        loading: t("Submitting order..."),
+        success: t("✅ Order submitted successfully!"),
+        error: (err) => err.message || t("Failed to submit order. Please try again."),
+      }),
+    // Ordering reduces remaining per-article capacity for the cycle, so the
+    // next articles fetch should reflect updated availability.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: publicArticlesQueryKey }),
   })
-
-  return {
-    submitOrder: mutation.mutateAsync,
-    isPending: mutation.isPending,
-    isError: mutation.isError,
-    error: mutation.error,
-  }
 }

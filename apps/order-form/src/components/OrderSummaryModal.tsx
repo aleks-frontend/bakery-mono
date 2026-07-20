@@ -2,48 +2,45 @@ import { useTranslation } from "react-i18next";
 import Modal from "react-modal";
 import { useSubmitOrder } from "@/hooks/useSubmitOrder";
 import { Spinner } from "./Spinner";
-import type { OrderPayload } from "@/types/orderTypes";
-import toast from "react-hot-toast";
+import type { OrderSummary } from "@/types/orderTypes";
+import type { CreatePublicOrderInput } from "@bakery/api-client";
 
 interface OrderSummaryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  payload: OrderPayload | null;
-  onSuccess: () => void;
+  summary: OrderSummary | null;
+  onSuccess: (summary: OrderSummary) => void;
 }
 
-const LOCATION_KEYS: Record<string, string> = {
-  subotica: "Subotica",
-  hajdukovo: "Hajdukovo",
-};
+function toCreateOrderInput(summary: OrderSummary): CreatePublicOrderInput {
+  return {
+    recipient: summary.recipient,
+    phone: summary.phone,
+    email: summary.email,
+    location: summary.location,
+    remark: summary.remark,
+    repeat: summary.repeat,
+    items: summary.items.map((item) => ({ articleId: item.articleId, quantity: item.quantity })),
+  };
+}
 
 export function OrderSummaryModal({
   isOpen,
   onClose,
-  payload,
+  summary,
   onSuccess,
 }: OrderSummaryModalProps) {
   const { t } = useTranslation();
-  const { submitOrder, isPending } = useSubmitOrder({
-    onSuccess: () => {
-      toast.success(t("✅ Order submitted successfully!"));
-      onSuccess();
-    },
-    onError: (message) => {
-      toast.error(t(message));
-    },
-  });
+  const { mutateAsync, isPending } = useSubmitOrder();
 
   const handleConfirm = () => {
-    if (!payload) return;
-    submitOrder(payload).catch(() => {
-      // Error already shown via onError with server message or fallback
-    });
+    if (!summary) return;
+    mutateAsync(toCreateOrderInput(summary))
+      .then(() => onSuccess(summary))
+      .catch(() => {
+        // Error already surfaced via the toast in useSubmitOrder
+      });
   };
-
-  const locationLabel = payload?.location
-    ? t(LOCATION_KEYS[payload.location] ?? payload.location)
-    : "";
 
   return (
     <Modal
@@ -68,42 +65,47 @@ export function OrderSummaryModal({
         </button>
       </div>
 
-      {payload && (
+      {summary && (
         <div className="mb-6">
           <div className="mb-4">
             <strong>{t("Customer:")}</strong>
             <br />
-            {payload.customer.firstName} {payload.customer.lastName}
+            {summary.recipient}
             <br />
-            {payload.customer.phone}
-            {payload.customer.email ? (
+            {summary.phone}
+            {summary.email ? (
               <>
                 <br />
-                {payload.customer.email}
+                {summary.email}
               </>
             ) : null}
-            {payload.location ? (
+            {summary.location ? (
               <>
                 <br />
                 <br />
-                <strong>{t("Location:")}</strong> {locationLabel}
+                <strong>{t("Location:")}</strong> {t(summary.location)}
               </>
             ) : null}
           </div>
           <div className="mb-4">
             <strong>{t("Order Items:")}</strong>
-            {payload.items.map((item, i) => (
+            {summary.items.map((item, i) => (
               <div
                 key={i}
                 className="py-3 border-b border-bakery-border last:border-b-0"
               >
-                {item.breadName} × {item.quantity} = {item.total} {t("RSD")}
+                {item.name} × {item.quantity} = {item.total} {t("RSD")}
               </div>
             ))}
           </div>
           <div className="text-xl font-semibold text-right pt-4 border-t-2 border-bakery-border">
-            {t("Total:")} {payload.totalPrice} {t("RSD")}
+            {t("Total:")} {summary.totalPrice} {t("RSD")}
           </div>
+          {summary.repeat && (
+            <div className="mt-4 text-sm bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 text-blue-900">
+              {t("This order will repeat automatically every week until you ask us to stop.")}
+            </div>
+          )}
         </div>
       )}
 
@@ -124,7 +126,7 @@ export function OrderSummaryModal({
             <button
               type="button"
               onClick={handleConfirm}
-              disabled={!payload || isPending}
+              disabled={!summary || isPending}
               className="py-2.5 px-6 rounded-xl border-none font-medium cursor-pointer bg-bakery-primary text-white hover:bg-bakery-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {t("Confirm Order")}

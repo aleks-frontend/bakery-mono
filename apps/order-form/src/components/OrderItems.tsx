@@ -2,17 +2,17 @@ import { useTranslation } from "react-i18next";
 import { useFieldArray } from "react-hook-form";
 import type { Control } from "react-hook-form";
 import type { OrderFormValues } from "@/schemas/orderSchemas";
-import type { BreadType } from "@/types/orderTypes";
+import type { PublicArticle } from "@bakery/api-client";
 import type { FieldArrayWithId } from "react-hook-form";
 import { OrderItemRow } from "./OrderItemRow";
 
 interface OrderItemsProps {
   control: Control<OrderFormValues>;
-  breadTypes: BreadType[];
+  articles: PublicArticle[];
   onUpdate: () => void;
 }
 
-export function OrderItems({ control, breadTypes, onUpdate }: OrderItemsProps) {
+export function OrderItems({ control, articles, onUpdate }: OrderItemsProps) {
   const { t } = useTranslation();
   const { fields, append, remove } = useFieldArray({
     control,
@@ -20,8 +20,8 @@ export function OrderItems({ control, breadTypes, onUpdate }: OrderItemsProps) {
   });
 
   const handleAdd = () => {
-    const firstId = breadTypes[0]?.id ?? "";
-    append({ breadId: firstId, quantity: 1 });
+    const firstId = articles[0]?.id ?? "";
+    append({ articleId: firstId, quantity: 1 });
   };
 
   return (
@@ -36,7 +36,7 @@ export function OrderItems({ control, breadTypes, onUpdate }: OrderItemsProps) {
             <OrderItemRow
               key={field.id}
               control={control}
-              breadTypes={breadTypes}
+              articles={articles}
               index={index}
               onRemove={remove}
               onUpdate={onUpdate}
@@ -49,7 +49,7 @@ export function OrderItems({ control, breadTypes, onUpdate }: OrderItemsProps) {
         onClick={handleAdd}
         className="mt-3 rounded-xl border-none py-2.5 px-4 text-[0.95rem] font-medium cursor-pointer transition-colors bg-bakery-primary text-white hover:bg-bakery-primary-hover hover:-translate-y-px active:translate-y-0 add-article"
       >
-        {t("+ Add bread")}
+        {t("➕ Add article")}
       </button>
     </>
   );

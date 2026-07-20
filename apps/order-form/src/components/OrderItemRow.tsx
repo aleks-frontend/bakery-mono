@@ -7,11 +7,11 @@ import {
 } from "react-hook-form";
 import Select from "react-select";
 import type { OrderFormValues } from "@/schemas/orderSchemas";
-import type { BreadType } from "@/types/orderTypes";
+import type { PublicArticle } from "@bakery/api-client";
 
 interface OrderItemRowProps {
   control: Control<OrderFormValues>;
-  breadTypes: BreadType[];
+  articles: PublicArticle[];
   index: number;
   onRemove: UseFieldArrayRemove;
   onUpdate: () => void;
@@ -19,39 +19,39 @@ interface OrderItemRowProps {
 
 export function OrderItemRow({
   control,
-  breadTypes,
+  articles,
   index,
   onRemove,
   onUpdate,
 }: OrderItemRowProps) {
   const { t } = useTranslation();
-  const breadOptions = useMemo(
+  const articleOptions = useMemo(
     () =>
-      breadTypes.map((b) => ({
-        value: b.id,
-        label: `${b.name} (${b.price} ${t("RSD")})`,
+      articles.map((a) => ({
+        value: a.id,
+        label: `${a.name} (${a.price} ${t("RSD")})`,
       })),
-    [breadTypes, t]
+    [articles, t]
   );
 
   return (
     <div className="p-2 bg-[rgb(250,248,244)] border border-bakery-border rounded-lg mb-3 last:mb-0">
       <div className="flex gap-3 items-end">
         <Controller
-          name={`items.${index}.breadId`}
+          name={`items.${index}.articleId`}
           control={control}
-          render={({ field: breadField }) => (
+          render={({ field: articleField }) => (
             <Select
-              options={breadOptions}
+              options={articleOptions}
               value={
-                breadOptions.find((o) => o.value === breadField.value) ?? null
+                articleOptions.find((o) => o.value === articleField.value) ?? null
               }
               onChange={(opt) => {
-                breadField.onChange(opt?.value ?? "");
+                articleField.onChange(opt?.value ?? "");
                 onUpdate();
               }}
-              onBlur={breadField.onBlur}
-              ref={breadField.ref}
+              onBlur={articleField.onBlur}
+              ref={articleField.ref}
               className="flex-[2] mt-0 react-select-container"
               classNamePrefix="react-select"
               styles={{
