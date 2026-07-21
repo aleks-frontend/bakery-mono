@@ -120,10 +120,12 @@ Being done in chunks; see the checklist below for what's actually wired up so fa
 
 ## Phase 11 — PDF Exports
 
-- [ ] Order receipt PDF (adapt existing `@react-pdf/renderer` template to new data model)
-- [ ] Workshop/production list PDF
-- [ ] Package sticker PDF
-- [ ] Wire export actions into the admin panel order list/detail views
+**Turned out to already be done** — as a side effect of Phase 9's Orders chunk (`12e669c`), not tracked as its own phase at the time. That commit's message says it plainly ("Updated the 3 PDF components and the XLS export to the new structured `OrderItem[]` shape") but Phase 11's checklist here was never updated to match. Re-verified this session (typecheck clean, all i18n keys present in `en`/`sr`/`hu`, no browser tool available this session to visually confirm rendered PDFs — recommend a quick manual spot-check next time the admin panel is open) before checking these off:
+
+- [x] Order receipt PDF (adapt existing `@react-pdf/renderer` template to new data model) — `OrderReceiptPdf.tsx`'s `OrderReceiptDocument`/`downloadOrderReceiptPdf`, reading `order.items[].article.name`/`unitPrice` (structured `OrderItem[]`, not the old raw bullet-string), wired to a "Download Receipt" button in `OrderDetailsModal.tsx` (`handleDownloadReceiptPdf`).
+- [x] Workshop/production list PDF — `WorkshopListPdf.tsx`'s `downloadWorkshopListPdf`, summing quantities per article across all selected orders and extracting gram-weight straight from `article.name`'s trailing "NNNg" suffix (`parseArticleNameWeight`), with an "unparsed lines" fallback section for any article name that doesn't match that pattern.
+- [x] Package sticker PDF — `PackageStickersPdf.tsx`'s `downloadPackageStickersPdf`, one 3-per-row sticker per selected order (recipient, phone, location, itemized `OrderItem[]`, total, remark).
+- [x] Wire export actions into the admin panel order list/detail views — `OrdersPage.tsx`'s bulk-selection panel has "Generate Workshop List"/"Generate Package Stickers" buttons (`handleGenerateWorkshopList`/`handleGeneratePackageStickers`, each with its own loading state) operating on `selectedOrders`; `OrderDetailsModal.tsx` has the per-order receipt download button.
 
 ## Phase 12 — Dashboard
 
