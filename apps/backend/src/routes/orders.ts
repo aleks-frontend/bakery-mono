@@ -5,6 +5,7 @@ import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { priceAndValidateItems } from "../lib/orderPricing.js";
+import { sendOrderNotifications } from "../lib/email.js";
 
 export const ordersRouter = Router();
 
@@ -85,6 +86,7 @@ ordersRouter.post("/", async (req, res) => {
     },
     include: orderInclude,
   });
+  void sendOrderNotifications(order);
   res.status(201).json(order);
 });
 

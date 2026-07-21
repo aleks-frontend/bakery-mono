@@ -3,6 +3,7 @@ import { createPublicOrderSchema } from "@bakery/schemas";
 import { prisma } from "../lib/prisma.js";
 import { computeAvailability, getCurrentCycle, getOrderedQuantitiesByArticle } from "../lib/availability.js";
 import { priceAndValidateItems } from "../lib/orderPricing.js";
+import { sendOrderNotifications } from "../lib/email.js";
 import { orderInclude } from "./orders.js";
 
 export const publicRouter = Router();
@@ -74,5 +75,6 @@ publicRouter.post("/orders", async (req, res) => {
     });
   });
 
+  void sendOrderNotifications(order);
   res.status(201).json(order);
 });
