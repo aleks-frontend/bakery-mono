@@ -44,6 +44,9 @@ export function Header() {
             {session && (
               <>
                 <nav className="flex items-center gap-1">
+                  <NavLink to="/dashboard" className={navLinkClass}>
+                    {t("Dashboard")}
+                  </NavLink>
                   <NavLink to="/" end className={navLinkClass}>
                     {t("Orders")}
                   </NavLink>

@@ -228,5 +228,20 @@
   "Log in": "Prijavi se",
   "Log out": "Odjavi se",
   "Invalid email or password": "Pogrešan email ili lozinka",
-  "Invalid email": "Nevažeći email"
+  "Invalid email": "Nevažeći email",
+  "Dashboard": "Kontrolna tabla",
+  "Total Orders": "Ukupno porudžbina",
+  "Revenue": "Prihod",
+  "Average Order Value": "Prosečna vrednost porudžbine",
+  "Status Breakdown": "Pregled po statusu",
+  "Order Volume by Cycle": "Broj porudžbina po ciklusu",
+  "Revenue by Cycle": "Prihod po ciklusu",
+  "Top Selling Articles": "Najprodavaniji artikli",
+  "Select cycle...": "Izaberi ciklus...",
+  "current cycle": "trenutni ciklus",
+  "Showing": "Prikazano",
+  "Loading dashboard...": "Učitavanje kontrolne table...",
+  "Error loading dashboard": "Greška pri učitavanju kontrolne table",
+  "Selected cycle": "Izabrani ciklus",
+  "All time": "Sve vreme"
 }

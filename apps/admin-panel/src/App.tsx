@@ -4,6 +4,7 @@ import { OrdersPage } from "./app/OrdersPage"
 import { ArticlesPage } from "./app/ArticlesPage"
 import { CyclesPage } from "./app/CyclesPage"
 import { RepeatingOrdersPage } from "./app/RepeatingOrdersPage"
+import { DashboardPage } from "./app/DashboardPage"
 import { LoginPage } from "./app/LoginPage"
 import { Header } from "./components/Header"
 import { RequireAuth } from "./components/RequireAuth"
@@ -27,6 +28,7 @@ function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route element={<RequireAuth />}>
+              <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/" element={<OrdersPage />} />
               <Route path="/articles" element={<ArticlesPage />} />
               <Route path="/cycles" element={<CyclesPage />} />

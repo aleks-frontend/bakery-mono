@@ -129,9 +129,15 @@ Being done in chunks; see the checklist below for what's actually wired up so fa
 
 ## Phase 12 — Dashboard
 
-- [ ] Order volume overview (current cycle + historical)
-- [ ] Status breakdown (Not received / In Progress / Delivered)
-- [ ] Basic date-range or per-cycle filtering
+Scoped with the user beyond the bare checklist: added a revenue trend (total + average order value) and top-selling articles, since those are obvious business value sitting in the schema that the literal spec didn't call for. Explicitly left out this pass: capacity-pressure and repeating/location breakdowns. Charting via **Recharts** (new dependency, none was installed before). All aggregates deliberately don't filter on `archived` — an archived order is still a real historical sale here (invalid orders get deleted outright, not archived, per `project-scope.md`), so archiving one must never silently drop it from the numbers; verified live (see below).
+
+- [x] Order volume overview (current cycle + historical) — new `GET /api/dashboard/stats?cycleId=` endpoint (`apps/backend/src/routes/dashboard.ts`, logic in `lib/dashboardStats.ts`'s `getDashboardStats()`): `orderVolume.current` (count for the resolved/selected cycle) plus `orderVolume.byCycle` (count per cycle, all cycles, chronological by `deliveryDate`) for the historical trend. Also added revenue the same way (`revenue.current`/`averageOrderValue`/`byCycle`) and `topArticles` (top 10 by quantity, scoped to the selected cycle, mirroring `lib/availability.ts`'s `getOrderedQuantitiesByArticle()` pattern without the single-cycle exclusion param).
+- [x] Status breakdown (Not received / In Progress / Delivered) — `statusBreakdown` in the same response, `groupBy` on `Order.status` scoped to the selected cycle, filled out to all three enum values (zero for any missing) so a cycle with no `DELIVERED` orders yet doesn't just omit the key.
+- [x] Basic date-range or per-cycle filtering — per-cycle, not raw date-range (`Order.cycleId` is mandatory and `Cycle.label` is the natural bucket, so a cycle picker fits the data model better than free-form dates). New `apps/admin-panel/src/app/DashboardPage.tsx` at `/dashboard` (new nav tab, placed first — doesn't change the existing `/` → Orders default landing route): a cycle `Select` (reusing the existing `useCyclesQuery`) re-scopes the status-breakdown/top-articles/stat-tile cards; the historical trend charts (order volume, revenue by cycle) always span every cycle regardless of the picker, by design.
+
+New `packages/api-client/src/dashboard.ts` (`createDashboardClient`/`useDashboardStatsQuery`, following the exact `orders.ts`/`cycles.ts` convention) and `packages/schemas/src/dashboard.ts` (`dashboardStatsQuerySchema`, just the optional `cycleId` query param — no response schema, matching `public.ts`'s `GET /articles` precedent of not Zod-validating outbound shape).
+
+Verified live: `typecheck`/`lint`/`build` all clean across every workspace. Hit `GET /api/dashboard/stats` directly (with a session cookie) before/after creating and then archiving a throwaway order — count and revenue stayed at 5 both before and after archiving, confirming archived orders are correctly still counted; `?cycleId=<past cycle>` correctly re-scoped to a different count/revenue/status mix with `isCurrent: false`. Admin panel's dev server served the new page's module with no transform errors. **Not verified this session**: actually opening `/dashboard` in a browser to visually confirm the charts render correctly — no Chrome browser tool was connected this session, same caveat as Phase 11. Worth a quick manual look next time the admin panel is open.
 
 ## Phase 13 — Order Form Integration
 
@@ -199,3 +205,25 @@ Go to railway.com (open in an incognito window if you hit a redirect problem):
 - [ ] Point production order-form and admin panel domains at the new backend
 - [ ] Disable n8n webhooks the same day (hard cutover, no parallel-run period)
 - [ ] Wire up the Loopia subdomain for production once confirmed stable
+
+## Phase 15 — Responsive Header Navigation
+
+Admin panel's `Header.tsx` currently renders `Dashboard`/`Orders`/`Articles`/`Cycles`/`Repeating Orders` as a plain horizontal `NavLink` row with no responsive handling — fine on desktop, but crowds or overflows on narrow/mobile viewports.
+
+- [ ] Below a `sm`/`md` breakpoint, collapse the horizontal nav into a hamburger icon button
+- [ ] Hamburger opens a dropdown or slide-in menu with the same links (reuse the existing `DropdownMenu` primitive in `components/ui/dropdown-menu.tsx`, or add a `Sheet` if a slide-in panel reads better — either is a small addition on top of existing shadcn/ui conventions)
+- [ ] Preserve active-route highlighting inside the collapsed menu, matching the current desktop nav's styling convention
+- [ ] Confirm `BackendHealthBadge`, `LanguageSelector`, and the sign-out button all remain reachable and usable at narrow widths too, not just the nav links
+- [ ] Manually verify at common breakpoints (mobile portrait, tablet) — no visual-regression tooling exists yet (see Phase 16)
+
+## Phase 16 — Test Coverage (Unit + End-to-End)
+
+`tech-stack.md` already names Vitest + Supertest for backend/frontend unit testing, but neither is scaffolded yet (per root `CLAUDE.md`: "No test runner is configured yet"). No end-to-end tool has been chosen at all. This phase covers the whole monorepo, not just new code going forward.
+
+- [ ] Scaffold Vitest in `apps/backend`, `apps/admin-panel`, `apps/order-form`, and `packages/*`, wired into each workspace's `package.json` and the root `npm test`
+- [ ] Backend: Supertest-driven route tests for every router (`articles`, `cycles`, `orders`, `repeating-orders`, `public`, `dashboard`) plus unit tests for the pure/near-pure lib functions (`orderPricing`, `availability`, `cycleDates`, `dashboardStats`, `email`)
+- [ ] Frontend: component/hook unit tests for both apps' critical flows (order creation/edit, article CRUD, cycle transitions, repeating-order cloning, dashboard rendering)
+- [ ] Add an end-to-end tool — suggest **Playwright** (strong Vite/React support, can drive both `admin-panel` and `order-form` against a real running backend instance), open to Cypress if preferred
+- [ ] End-to-end coverage of the two most business-critical flows at minimum: public order-form submission (article selection → submit → confirmation), and admin manual order lifecycle (create → edit → status change → archive)
+- [ ] Decide whether/how tests run in CI — no CI pipeline exists yet, so this may be its own follow-up rather than in scope here
+- [ ] Once coverage exists, fold "tests pass" into Phase 14's cutover checklist as a real gate rather than manual spot-checks

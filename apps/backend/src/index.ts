@@ -6,6 +6,7 @@ import { auth, trustedOrigins } from "./lib/auth.js";
 import { prisma } from "./lib/prisma.js";
 import { articlesRouter } from "./routes/articles.js";
 import { cyclesRouter } from "./routes/cycles.js";
+import { dashboardRouter } from "./routes/dashboard.js";
 import { ordersRouter } from "./routes/orders.js";
 import { publicRouter } from "./routes/public.js";
 import { repeatingOrdersRouter } from "./routes/repeatingOrders.js";
@@ -43,6 +44,7 @@ app.get("/health", async (_req, res) => {
 
 app.use("/api/articles", articlesRouter);
 app.use("/api/cycles", cyclesRouter);
+app.use("/api/dashboard", dashboardRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/public", publicRouter);
 app.use("/api/repeating-orders", repeatingOrdersRouter);

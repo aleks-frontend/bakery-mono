@@ -228,5 +228,20 @@
   "Log in": "Bejelentkezés",
   "Log out": "Kijelentkezés",
   "Invalid email or password": "Érvénytelen email vagy jelszó",
-  "Invalid email": "Érvénytelen email"
+  "Invalid email": "Érvénytelen email",
+  "Dashboard": "Irányítópult",
+  "Total Orders": "Összes rendelés",
+  "Revenue": "Bevétel",
+  "Average Order Value": "Átlagos rendelési érték",
+  "Status Breakdown": "Állapot szerinti bontás",
+  "Order Volume by Cycle": "Rendelések száma ciklusonként",
+  "Revenue by Cycle": "Bevétel ciklusonként",
+  "Top Selling Articles": "Legkeresettebb cikkek",
+  "Select cycle...": "Ciklus kiválasztása...",
+  "current cycle": "jelenlegi ciklus",
+  "Showing": "Megjelenítve",
+  "Loading dashboard...": "Irányítópult betöltése...",
+  "Error loading dashboard": "Hiba az irányítópult betöltésekor",
+  "Selected cycle": "Kiválasztott ciklus",
+  "All time": "Összesen"
 }

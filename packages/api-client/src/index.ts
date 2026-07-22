@@ -21,6 +21,8 @@ export {
   useNextCycleSuggestionQuery,
 } from "./cycles.js";
 export type { CyclesClient, RepeatingOrderCloneResult, StartCycleResult } from "./cycles.js";
+export { createDashboardClient, useDashboardStatsQuery, dashboardStatsQueryKey } from "./dashboard.js";
+export type { DashboardClient } from "./dashboard.js";
 export {
   createRepeatingOrdersClient,
   useRepeatingOrdersQuery,
@@ -40,6 +42,7 @@ export type {
   CreatePublicOrderInput,
 } from "@bakery/schemas";
 export type { Cycle, CycleStatus, CycleSuggestion, StartCycleInput } from "@bakery/schemas";
+export type { DashboardStats } from "@bakery/schemas";
 export type {
   RepeatingOrder,
   RepeatingOrderItem,

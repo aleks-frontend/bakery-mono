@@ -1,6 +1,7 @@
 import {
   createArticlesClient,
   createCyclesClient,
+  createDashboardClient,
   createHttpClient,
   createOrdersClient,
   createRepeatingOrdersClient,
@@ -14,3 +15,4 @@ export const articlesClient = createArticlesClient(http)
 export const ordersClient = createOrdersClient(http)
 export const cyclesClient = createCyclesClient(http)
 export const repeatingOrdersClient = createRepeatingOrdersClient(http)
+export const dashboardClient = createDashboardClient(http)

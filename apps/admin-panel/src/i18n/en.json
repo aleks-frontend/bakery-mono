@@ -228,5 +228,20 @@
   "Log in": "Log in",
   "Log out": "Log out",
   "Invalid email or password": "Invalid email or password",
-  "Invalid email": "Invalid email"
+  "Invalid email": "Invalid email",
+  "Dashboard": "Dashboard",
+  "Total Orders": "Total Orders",
+  "Revenue": "Revenue",
+  "Average Order Value": "Average Order Value",
+  "Status Breakdown": "Status Breakdown",
+  "Order Volume by Cycle": "Order Volume by Cycle",
+  "Revenue by Cycle": "Revenue by Cycle",
+  "Top Selling Articles": "Top Selling Articles",
+  "Select cycle...": "Select cycle...",
+  "current cycle": "current cycle",
+  "Showing": "Showing",
+  "Loading dashboard...": "Loading dashboard...",
+  "Error loading dashboard": "Error loading dashboard",
+  "Selected cycle": "Selected cycle",
+  "All time": "All time"
 }
