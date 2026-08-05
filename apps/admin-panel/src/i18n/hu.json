@@ -78,6 +78,7 @@
   "This will permanently delete {{count}} {{entity}}.": "Ez véglegesen törli a(z) {{count}} {{entity}}.",
   "order": "rendelést",
   "orders": "rendelést",
+  "Archived": "Archiválva",
   "Archive Order": "Rendelés archiválása",
   "Unarchive Order": "Archiválás visszavonása",
   "Archive selected": "Kijelöltek archiválása",

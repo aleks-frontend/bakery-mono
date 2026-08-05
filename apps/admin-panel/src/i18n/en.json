@@ -78,6 +78,7 @@
   "This will permanently delete {{count}} {{entity}}.": "This will permanently delete {{count}} {{entity}}.",
   "order": "order",
   "orders": "orders",
+  "Archived": "Archived",
   "Archive Order": "Archive Order",
   "Unarchive Order": "Unarchive Order",
   "Archive selected": "Archive selected",

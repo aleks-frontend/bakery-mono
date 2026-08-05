@@ -159,6 +159,12 @@ export function OrdersTable({
           const order = row.original;
           return (
             <div className="flex items-center gap-1.5 font-medium">
+              {order.archived && (
+                <Tooltip
+                  trigger={<Archive className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />}
+                  content={t("Archived")}
+                />
+              )}
               {order.repeatingOrderId && (
                 <Tooltip
                   trigger={<Repeat className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />}
@@ -337,7 +343,11 @@ export function OrdersTable({
         <TableBody>
           {table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+              <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() && "selected"}
+                className={cn(row.original.archived && "opacity-60")}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                 ))}

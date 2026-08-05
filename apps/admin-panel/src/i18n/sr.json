@@ -78,6 +78,7 @@
   "This will permanently delete {{count}} {{entity}}.": "Ovo će trajno obrisati {{count}} {{entity}}.",
   "order": "porudžbinu",
   "orders": "porudžbine",
+  "Archived": "Arhivirano",
   "Archive Order": "Arhiviraj porudžbinu",
   "Unarchive Order": "Vrati iz arhive",
   "Archive selected": "Arhiviraj odabrane",
