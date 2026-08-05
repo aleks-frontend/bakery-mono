@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { StatusDropdown } from "./StatusDropdown";
 import type { Order, OrderStatus, OrdersListParams } from "@bakery/api-client";
 import { Archive, ArchiveRestore, ArrowUpDown, Eye, MessageSquare, Repeat, Trash2 } from "lucide-react";
@@ -159,14 +160,22 @@ export function OrdersTable({
           return (
             <div className="flex items-center gap-1.5 font-medium">
               {order.repeatingOrderId && (
-                <span title={t("Repeating order")}>
-                  <Repeat className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-                </span>
+                <Tooltip
+                  trigger={<Repeat className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />}
+                  content={t("Repeating order")}
+                />
               )}
               {order.remark && (
-                <span title={`${t("Has a remark")}: ${order.remark}`}>
-                  <MessageSquare className="h-3.5 w-3.5 shrink-0 text-amber-600" aria-hidden />
-                </span>
+                <Tooltip
+                  trigger={<MessageSquare className="h-3.5 w-3.5 shrink-0 text-amber-600" aria-hidden />}
+                  content={
+                    <>
+                      <span className="font-semibold">{t("Has a remark")}: </span>
+                      {order.remark}
+                    </>
+                  }
+                  contentClassName="max-w-xs"
+                />
               )}
               <span className="truncate">{order.recipient}</span>
             </div>

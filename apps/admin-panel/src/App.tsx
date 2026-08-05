@@ -8,6 +8,7 @@ import { DashboardPage } from "./app/DashboardPage"
 import { LoginPage } from "./app/LoginPage"
 import { Header } from "./components/Header"
 import { RequireAuth } from "./components/RequireAuth"
+import { TooltipProvider } from "./components/ui/tooltip"
 import "./i18n"
 
 const queryClient = new QueryClient({
@@ -22,22 +23,24 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <HashRouter>
-        <div className="min-h-screen">
-          <Header />
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route element={<RequireAuth />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/" element={<OrdersPage />} />
-              <Route path="/articles" element={<ArticlesPage />} />
-              <Route path="/cycles" element={<CyclesPage />} />
-              <Route path="/repeating-orders" element={<RepeatingOrdersPage />} />
-            </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </div>
-      </HashRouter>
+      <TooltipProvider>
+        <HashRouter>
+          <div className="min-h-screen">
+            <Header />
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route element={<RequireAuth />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/" element={<OrdersPage />} />
+                <Route path="/articles" element={<ArticlesPage />} />
+                <Route path="/cycles" element={<CyclesPage />} />
+                <Route path="/repeating-orders" element={<RepeatingOrdersPage />} />
+              </Route>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </div>
+        </HashRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   )
 }
