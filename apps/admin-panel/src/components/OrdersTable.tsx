@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { StatusDropdown } from "./StatusDropdown";
 import type { Order, OrderStatus, OrdersListParams } from "@bakery/api-client";
-import { Archive, ArchiveRestore, ArrowUpDown, Eye, Repeat, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowUpDown, Eye, MessageSquare, Repeat, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -161,6 +161,11 @@ export function OrdersTable({
               {order.repeatingOrderId && (
                 <span title={t("Repeating order")}>
                   <Repeat className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+                </span>
+              )}
+              {order.remark && (
+                <span title={`${t("Has a remark")}: ${order.remark}`}>
+                  <MessageSquare className="h-3.5 w-3.5 shrink-0 text-amber-600" aria-hidden />
                 </span>
               )}
               <span className="truncate">{order.recipient}</span>

@@ -83,6 +83,10 @@ export const orderListQuerySchema = z.object({
     .string()
     .optional()
     .transform((v) => v === "true"),
+  hasRemark: z
+    .string()
+    .optional()
+    .transform((v) => v === "true"),
   search: z.string().optional(),
   sortBy: z.enum(["createdAt", "totalPrice", "recipient"]).default("createdAt"),
   sortDir: z.enum(["asc", "desc"]).default("desc"),

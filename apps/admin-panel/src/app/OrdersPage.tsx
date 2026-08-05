@@ -46,6 +46,7 @@ export function OrdersPage() {
   const [sortBy, setSortBy] = useState<SortableColumn>("createdAt")
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
   const [showArchived, setShowArchived] = useState(false)
+  const [hasRemarkFilter, setHasRemarkFilter] = useState(false)
 
   const { data: orders = [], isLoading, error } = useOrdersQuery({
     search: searchQuery.trim() || undefined,
@@ -53,6 +54,7 @@ export function OrdersPage() {
     sortBy,
     sortDir,
     archived: showArchived,
+    hasRemark: hasRemarkFilter || undefined,
   })
   const bulkStatusMutation = useBulkUpdateOrderStatusMutation()
   const deleteOrdersMutation = useDeleteOrderMutation()
@@ -271,6 +273,12 @@ export function OrdersPage() {
             {t("Show archived")}
           </label>
           <Switch id="show-archived-toggle" checked={showArchived} onCheckedChange={setShowArchived} />
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <label htmlFor="has-remark-toggle" className="text-sm font-medium cursor-pointer">
+            {t("Only with remarks")}
+          </label>
+          <Switch id="has-remark-toggle" checked={hasRemarkFilter} onCheckedChange={setHasRemarkFilter} />
         </div>
       </div>
 

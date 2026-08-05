@@ -6,6 +6,7 @@ export interface OrdersListParams {
   status?: OrderStatus;
   cycleId?: string;
   archived?: boolean;
+  hasRemark?: boolean;
   search?: string;
   sortBy?: "createdAt" | "totalPrice" | "recipient";
   sortDir?: "asc" | "desc";
@@ -28,6 +29,7 @@ function buildQuery(params?: OrdersListParams): string {
   if (params.status) qs.set("status", params.status);
   if (params.cycleId) qs.set("cycleId", params.cycleId);
   if (params.archived !== undefined) qs.set("archived", String(params.archived));
+  if (params.hasRemark) qs.set("hasRemark", String(params.hasRemark));
   if (params.search) qs.set("search", params.search);
   if (params.sortBy) qs.set("sortBy", params.sortBy);
   if (params.sortDir) qs.set("sortDir", params.sortDir);

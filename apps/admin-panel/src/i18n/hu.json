@@ -83,6 +83,8 @@
   "Archive selected": "Kijelöltek archiválása",
   "Unarchive selected": "Kijelöltek visszaállítása",
   "Show archived": "Archivált mutatása",
+  "Only with remarks": "Csak megjegyzéssel",
+  "Has a remark": "Van megjegyzése",
   "Confirm Archive": "Archiválás megerősítése",
   "This will archive {{entity}} {{id}}.": "Ez archiválja a(z) {{id}} {{entity}}.",
   "This will archive {{count}} {{entity}}.": "Ez archiválja a(z) {{count}} {{entity}}.",

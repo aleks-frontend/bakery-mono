@@ -241,3 +241,60 @@ Prompted by a real incident on the old n8n+Sheets system: a baker got the Telegr
 - [ ] Add a regression test once Phase 16's test infra exists: fire two concurrent requests for the same capacity-limited article and assert exactly one is accepted when only one unit of capacity remains
 - [ ] Decide on customer-facing behavior for the rejected concurrent order — same "Some items are unavailable" 409 the capacity check already returns for the non-race case, so no new UI needed, just confirm it's reachable from this new code path too
 - [ ] Audit for the same class of check-then-act race anywhere else in the codebase that reads current state and later acts on it without a lock (e.g. the "at most one OPEN cycle" invariant — already enforced via a DB-level partial unique index per `CLAUDE.md`, so likely fine, but worth a deliberate pass rather than assuming)
+
+## Phase 18 — Remark Visibility in Orders Table
+
+Baker-requested: orders with a `remark` (e.g. delivery instructions, substitution requests) are easy to miss in the admin panel's order list today — the remark only shows once an order is opened in `OrderDetailsModal`, not from the table itself.
+
+- [x] Added a remark indicator to `OrdersTable.tsx`'s recipient cell — an amber `MessageSquare` icon (`lucide-react`) shown whenever `order.remark` is non-empty, right after the existing `Repeat` icon so both can appear together for a repeating order that also has a remark. Its `title` tooltip surfaces the actual remark text (prefixed with the "Has a remark" label) rather than just a static label, so the baker can read the note without opening the row.
+- [x] Kept it in the recipient cell rather than a dedicated column, per the plan's lean — two small icons plus the name doesn't crowd the cell.
+- [x] Added `"Has a remark"` and `"Only with remarks"` to all three locale files (`en`/`sr`/`hu`).
+- [x] Added the "Only with remarks" `Switch` above the table in `OrdersPage.tsx`, next to "Show archived". Wired a new `hasRemark` boolean query param end-to-end: `orderListQuerySchema` (`packages/schemas/src/order.ts`) using the same `z.string().optional().transform(v => v === "true")` convention as `archived` (not `z.coerce.boolean()`, per the root `CLAUDE.md` gotcha); `orders.ts`'s `where` clause adds `remark: { not: null }` only when `hasRemark` is true (unlike `archived`, which is applied unconditionally, this one shouldn't hide remark-less orders when the switch is off); and `OrdersListParams`/`buildQuery` in `packages/api-client/src/orders.ts`. `OrdersPage.tsx` passes `hasRemark: hasRemarkFilter || undefined` so the param is omitted from the query entirely when the switch is off.
+- Verified with `npm run typecheck` and `npm run lint` (root) — clean aside from pre-existing warnings unrelated to this change. Had to rebuild `@bakery/schemas`/`@bakery/api-client` (`npm run build -w @bakery/schemas -w @bakery/api-client`) for the new `hasRemark` field to be visible to consumers, since both are consumed via their compiled `dist` output, not source directly.
+
+## Phase 19 — Out-of-Stock Articles with Similar-Article Suggestions (order-form)
+
+Reminder only — not yet scoped in detail, revisit when this phase starts.
+
+Currently `apps/order-form/src/App.tsx` filters unavailable articles out entirely (`.filter((a) => a.available)`) before they ever reach `OrderForm`, so a customer has no way to know an article exists but is sold out this cycle. Baker-requested: surface out-of-stock articles instead of hiding them, collapsed/hidden behind a toggle or button by default (e.g. a "Show out-of-stock articles" button opening a modal), and — for each out-of-stock article shown — suggest a similar available article as an alternative.
+
+- [ ] The "similar article" suggestion implies a new data relationship on `Article` (a self-relation — likely `Article` ↔ `Article`, one- or many-directional, needs a schema/migration decision) plus an admin-panel UI for the baker to actually set which articles are similar to which; neither exists today
+- [ ] Needs a decision on the public order-form UX: inline collapsed section vs. dedicated modal, and where in the article-picker flow the "show similar" suggestion appears relative to the sold-out item
+- [ ] Revisit and flesh out the rest of this phase's checklist when implementation actually starts
+
+## Phase 20 — Fix "Start Next Cycle" Suggested-Date Bug
+
+Reminder only, collected during a baker meeting — not yet implemented.
+
+Bug: `GET /api/cycles/next-suggestion` (used to pre-fill `StartCycleModal`'s dates) is showing dates from the past instead of sensible upcoming ones. Root cause identified in `apps/backend/src/lib/cycleDates.ts`'s `suggestNextCycleDates()`: when a previous cycle exists, it blindly shifts that cycle's own `orderWindowOpensAt`/`orderWindowClosesAt`/`deliveryDate` forward by a fixed **+7 days**, with no reference to today's actual date (`now` is only ever consulted in the no-previous-cycle fallback branch). If the most recent cycle in the database is more than a week old — e.g. the baker skipped starting a cycle for a stretch, or (as happened during this session) historical cycles get seeded/backfilled — the "+7 days from last cycle" math lands in the past rather than snapping forward to the next real upcoming Saturday/Monday/Wednesday.
+
+- [ ] Fix `suggestNextCycleDates()` to anchor off `now` whenever the naive +7-day shift would land in the past (e.g. keep shifting by 7-day increments from the last cycle until the suggested `orderWindowOpensAt` is >= today, or just fall back to the same `nextOrSameWeekday(now, 6)` pattern already used when there's no previous cycle at all)
+- [ ] Decide whether "shift-by-7-from-last-cycle" should be abandoned entirely in favor of always deriving from `now` (simpler, but loses the "preserve holiday-adjusted gaps between open/close/delivery" behavior the current doc comment calls out as intentional) — needs a decision, not just a patch
+- [ ] Verify against a realistic gap scenario (last real cycle several weeks old) once fixed, not just the happy-path "cycle started last week" case that presumably passed before
+
+## Phase 21 — Per-Locale Holiday Messages, Set on Cycle Close
+
+Reminder only, collected during a baker meeting — not yet implemented.
+
+Two related asks:
+
+1. **Move where the holiday message gets set.** Today `holidayMessage` can only be entered in `StartCycleModal` (`apps/admin-panel/src/components/StartCycleModal.tsx`) — i.e. only when *starting* the next cycle. But the actual baker workflow is: closing ordering for a holiday and wanting customers to see an explanatory message while there's no open cycle (`GET /api/public/articles` falls back to `latestCycle?.holidayMessage` exactly in that no-open-cycle state, per `apps/backend/src/routes/public.ts`). There's currently no way to set/edit a holiday message at the point of *closing* a cycle — only retroactively via whatever gets typed into the next cycle's start form, which is backwards for this use case.
+2. **Three locale-specific fields instead of one.** `Cycle.holidayMessage` is currently a single `String?` column, always shown as-is regardless of the customer's selected language (order-form's `OrderStatusBanner` just renders it verbatim). Needs to become three fields — Serbian, Hungarian, English — so the displayed message matches whatever locale the customer has selected, consistent with how the rest of order-form's UI is already fully trilingual.
+
+- [ ] Schema change: replace `Cycle.holidayMessage String?` with three nullable string columns (e.g. `holidayMessageSr`, `holidayMessageHu`, `holidayMessageEn`) — needs a migration; decide fallback behavior if only some locales are filled in (e.g. fall back to English, or hide the banner text for a locale with no message)
+- [ ] Add a way to set the holiday message as part of the "Close Ordering" admin action (`PATCH /api/cycles/:id/close` flow), not just at cycle-start — likely a small modal/form prompt at close time, editable afterward too since a message may need correcting after the fact
+- [ ] Update `GET /api/public/articles` to return the right field for the customer's requested locale (or all three, letting the frontend pick) instead of the single `holidayMessage` string
+- [ ] Update `OrderStatusBanner` (order-form) to render the locale-matched message instead of a single hardcoded string
+- [ ] Decide what happens to `StartCycleModal`'s existing holiday-message field — remove it now that Close is the right place to set it, or keep both entry points
+
+## Phase 22 — Article Categories, Grouped Workshop List
+
+Reminder only, collected during a baker meeting — not yet implemented.
+
+Ask: give `Article` an optional category (e.g. "Bread", "Pastry", "Focaccia" — exact taxonomy TBD with the baker), and use it to order/group the Workshop List PDF by category instead of today's flat first-seen-order listing.
+
+- [ ] Schema change: add an optional `category` field to `Article` (`apps/backend/prisma/schema.prisma`) — needs a migration; decide whether it's a free-text string (simplest, matches how `location` on `Order` has no backend enum) or a fixed enum/lookup table (stricter, but requires its own admin management UI if the baker wants to add/rename categories later)
+- [ ] Add category as a field in the Articles admin UI (`ArticleModal`/`ArticlesTable`) — create/edit, and likely a column/filter on the list view too, consistent with how `capacityPerCycle`/`available` are already surfaced there
+- [ ] Update `WorkshopListPdf.tsx`'s `summarizeWorkshopArticlesFromOrders()` — currently groups purely by parsed base name in first-seen order (see `parseArticleNameWeight`'s gram-suffix extraction); needs to sort/section by `Article.category` first, then by name within each category, so the printed workshop list reads as one block per category instead of an unordered flat list
+- [ ] Decide how to handle articles with no category set (opt-in field, so this will happen) — likely an "Uncategorized" section at the end rather than silently interleaving them with categorized ones
+- [ ] Decide whether category should also surface anywhere else (e.g. grouping the public order-form's article picker, or the admin Articles list) — out of scope for this pass unless the baker asks, but worth a deliberate call rather than assuming

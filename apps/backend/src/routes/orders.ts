@@ -22,12 +22,13 @@ ordersRouter.get("/", async (req, res) => {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
-  const { status, cycleId, archived, search, sortBy, sortDir } = parsed.data;
+  const { status, cycleId, archived, hasRemark, search, sortBy, sortDir } = parsed.data;
 
   const where: PrismaTypes.OrderWhereInput = {
     archived,
     ...(status ? { status } : {}),
     ...(cycleId ? { cycleId } : {}),
+    ...(hasRemark ? { remark: { not: null } } : {}),
     ...(search
       ? {
           OR: [
