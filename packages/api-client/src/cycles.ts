@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { Cycle, CycleSuggestion, StartCycleInput } from "@bakery/schemas";
+import type { CloseCycleInput, Cycle, CycleStartSuggestion, NextCycleStartSuggestion, StartCycleInput } from "@bakery/schemas";
 import type { HttpClient } from "./http.js";
 
 export interface RepeatingOrderCloneResult {
@@ -16,9 +16,10 @@ export interface StartCycleResult {
 export interface CyclesClient {
   current(): Promise<Cycle | null>;
   list(): Promise<Cycle[]>;
-  nextSuggestion(): Promise<CycleSuggestion>;
+  nextCycleStartSuggestion(): Promise<NextCycleStartSuggestion>;
+  startSuggestion(): Promise<CycleStartSuggestion>;
   start(input: StartCycleInput): Promise<StartCycleResult>;
-  close(id: string): Promise<Cycle>;
+  close(id: string, input: CloseCycleInput): Promise<Cycle>;
   reopen(id: string): Promise<Cycle>;
   deliver(id: string): Promise<Cycle>;
   undoDeliver(id: string): Promise<Cycle>;
@@ -28,9 +29,11 @@ export function createCyclesClient(http: HttpClient): CyclesClient {
   return {
     current: () => http.request<Cycle | null>("/api/cycles/current"),
     list: () => http.request<Cycle[]>("/api/cycles"),
-    nextSuggestion: () => http.request<CycleSuggestion>("/api/cycles/next-suggestion"),
+    nextCycleStartSuggestion: () =>
+      http.request<NextCycleStartSuggestion>("/api/cycles/next-cycle-start-suggestion"),
+    startSuggestion: () => http.request<CycleStartSuggestion>("/api/cycles/start-suggestion"),
     start: (input) => http.request<StartCycleResult>("/api/cycles", { method: "POST", body: input }),
-    close: (id) => http.request<Cycle>(`/api/cycles/${id}/close`, { method: "PATCH" }),
+    close: (id, input) => http.request<Cycle>(`/api/cycles/${id}/close`, { method: "PATCH", body: input }),
     reopen: (id) => http.request<Cycle>(`/api/cycles/${id}/reopen`, { method: "PATCH" }),
     deliver: (id) => http.request<Cycle>(`/api/cycles/${id}/deliver`, { method: "PATCH" }),
     undoDeliver: (id) => http.request<Cycle>(`/api/cycles/${id}/undo-deliver`, { method: "PATCH" }),
@@ -45,6 +48,18 @@ export function useCyclesQuery(client: CyclesClient) {
   return useQuery({ queryKey: ["cycles", "list"], queryFn: client.list });
 }
 
-export function useNextCycleSuggestionQuery(client: CyclesClient, enabled: boolean) {
-  return useQuery({ queryKey: ["cycles", "next-suggestion"], queryFn: client.nextSuggestion, enabled });
+export function useNextCycleStartSuggestionQuery(client: CyclesClient, enabled: boolean) {
+  return useQuery({
+    queryKey: ["cycles", "next-cycle-start-suggestion"],
+    queryFn: client.nextCycleStartSuggestion,
+    enabled,
+  });
+}
+
+export function useStartCycleSuggestionQuery(client: CyclesClient, enabled: boolean) {
+  return useQuery({
+    queryKey: ["cycles", "start-suggestion"],
+    queryFn: client.startSuggestion,
+    enabled,
+  });
 }

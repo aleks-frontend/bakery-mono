@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { startCycleSchema } from "@bakery/schemas";
+import { startCycleSchema, closeCycleSchema } from "@bakery/schemas";
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/requireAuth.js";
-import { suggestNextCycleDates } from "../lib/cycleDates.js";
+import { suggestNextCycleStartDate, suggestCycleStart } from "../lib/cycleDates.js";
 import { cloneRepeatingOrdersIntoCycle } from "../lib/cloneRepeatingOrders.js";
 
 export const cyclesRouter = Router();
@@ -20,9 +20,12 @@ cyclesRouter.get("/", async (_req, res) => {
   res.json(cycles);
 });
 
-cyclesRouter.get("/next-suggestion", async (_req, res) => {
-  const lastCycle = await prisma.cycle.findFirst({ orderBy: { deliveryDate: "desc" } });
-  res.json(suggestNextCycleDates(lastCycle));
+cyclesRouter.get("/next-cycle-start-suggestion", async (_req, res) => {
+  res.json({ nextCycleStartDate: suggestNextCycleStartDate() });
+});
+
+cyclesRouter.get("/start-suggestion", async (_req, res) => {
+  res.json(suggestCycleStart());
 });
 
 cyclesRouter.post("/", async (req, res) => {
@@ -35,6 +38,11 @@ cyclesRouter.post("/", async (req, res) => {
   const openCycle = await prisma.cycle.findFirst({ where: { status: "OPEN" } });
   if (openCycle) {
     res.status(409).json({ error: "A cycle is already open. Close it before starting a new one." });
+    return;
+  }
+
+  if (parsed.data.deliveryDate <= new Date()) {
+    res.status(400).json({ error: "deliveryDate must be in the future" });
     return;
   }
 
@@ -54,10 +62,20 @@ cyclesRouter.post("/", async (req, res) => {
 });
 
 cyclesRouter.patch("/:id/close", async (req, res) => {
+  const parsed = closeCycleSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
   try {
     const cycle = await prisma.cycle.update({
       where: { id: req.params.id, status: "OPEN" },
-      data: { status: "CLOSED" },
+      data: {
+        status: "CLOSED",
+        nextCycleStartDate: parsed.data.nextCycleStartDate,
+        holidayMessage: parsed.data.holidayMessage ?? null,
+      },
     });
     res.json(cycle);
   } catch (error) {

@@ -183,10 +183,6 @@ async function main() {
   await prisma.article.createMany({ data: articles });
 
   const now = new Date();
-  const opensAt = new Date(now);
-  opensAt.setDate(now.getDate() - 2);
-  const closesAt = new Date(now);
-  closesAt.setDate(now.getDate() + 1);
   const deliveryDate = new Date(now);
   deliveryDate.setDate(now.getDate() + 3);
 
@@ -194,8 +190,6 @@ async function main() {
     data: {
       label: isoWeekLabel(now),
       status: "OPEN",
-      orderWindowOpensAt: opensAt,
-      orderWindowClosesAt: closesAt,
       deliveryDate,
     },
   });

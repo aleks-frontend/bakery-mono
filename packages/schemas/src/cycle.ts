@@ -7,37 +7,33 @@ export const cycleSchema = z.object({
   id: z.string(),
   label: z.string(),
   status: cycleStatusSchema,
-  orderWindowOpensAt: z.coerce.date(),
-  orderWindowClosesAt: z.coerce.date(),
   deliveryDate: z.coerce.date(),
+  nextCycleStartDate: z.coerce.date().nullable(),
   holidayMessage: z.string().nullable(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
 });
 export type Cycle = z.infer<typeof cycleSchema>;
 
-export const startCycleSchema = z
-  .object({
-    label: z.string().min(1),
-    orderWindowOpensAt: z.coerce.date(),
-    orderWindowClosesAt: z.coerce.date(),
-    deliveryDate: z.coerce.date(),
-    holidayMessage: z.string().nullable().optional(),
-  })
-  .refine((data) => data.orderWindowClosesAt > data.orderWindowOpensAt, {
-    message: "orderWindowClosesAt must be after orderWindowOpensAt",
-    path: ["orderWindowClosesAt"],
-  })
-  .refine((data) => data.deliveryDate > data.orderWindowClosesAt, {
-    message: "deliveryDate must be after orderWindowClosesAt",
-    path: ["deliveryDate"],
-  });
-export type StartCycleInput = z.infer<typeof startCycleSchema>;
-
-export const cycleSuggestionSchema = z.object({
-  label: z.string(),
-  orderWindowOpensAt: z.coerce.date(),
-  orderWindowClosesAt: z.coerce.date(),
+export const startCycleSchema = z.object({
+  label: z.string().min(1),
   deliveryDate: z.coerce.date(),
 });
-export type CycleSuggestion = z.infer<typeof cycleSuggestionSchema>;
+export type StartCycleInput = z.infer<typeof startCycleSchema>;
+
+export const closeCycleSchema = z.object({
+  nextCycleStartDate: z.coerce.date(),
+  holidayMessage: z.string().nullable().optional(),
+});
+export type CloseCycleInput = z.infer<typeof closeCycleSchema>;
+
+export const nextCycleStartSuggestionSchema = z.object({
+  nextCycleStartDate: z.coerce.date(),
+});
+export type NextCycleStartSuggestion = z.infer<typeof nextCycleStartSuggestionSchema>;
+
+export const cycleStartSuggestionSchema = z.object({
+  label: z.string(),
+  deliveryDate: z.coerce.date(),
+});
+export type CycleStartSuggestion = z.infer<typeof cycleStartSuggestionSchema>;

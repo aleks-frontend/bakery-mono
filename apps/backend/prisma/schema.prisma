@@ -32,15 +32,14 @@ enum CycleStatus {
 }
 
 model Cycle {
-  id                  String      @id @default(cuid())
-  label               String      @unique
-  status              CycleStatus @default(OPEN)
-  orderWindowOpensAt  DateTime
-  orderWindowClosesAt DateTime
-  deliveryDate        DateTime
-  holidayMessage      String?
-  createdAt           DateTime    @default(now())
-  updatedAt           DateTime    @updatedAt
+  id                 String      @id @default(cuid())
+  label              String      @unique
+  status             CycleStatus @default(OPEN)
+  deliveryDate       DateTime
+  nextCycleStartDate DateTime?
+  holidayMessage     String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 
   orders Order[]
 

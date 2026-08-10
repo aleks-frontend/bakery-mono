@@ -1,11 +1,11 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useCyclesQuery } from "@/hooks/useCyclesQuery"
-import { useCloseCycleMutation } from "@/hooks/useCloseCycleMutation"
 import { useReopenCycleMutation } from "@/hooks/useReopenCycleMutation"
 import { useDeliverCycleMutation } from "@/hooks/useDeliverCycleMutation"
 import { useUndoDeliverCycleMutation } from "@/hooks/useUndoDeliverCycleMutation"
 import { StartCycleModal } from "@/components/StartCycleModal"
+import { CloseCycleModal } from "@/components/CloseCycleModal"
 import { ConfirmActionDialog } from "@/components/ConfirmActionDialog"
 import { CycleStatusBadge } from "@/components/CycleStatusBadge"
 import { Button } from "@/components/ui/button"
@@ -15,7 +15,6 @@ import { Lock, PackageCheck, Plus, Undo2, Unlock } from "lucide-react"
 export function CyclesPage() {
   const { t } = useTranslation()
   const { data: cycles = [], isLoading, error } = useCyclesQuery()
-  const closeMutation = useCloseCycleMutation()
   const reopenMutation = useReopenCycleMutation()
   const deliverMutation = useDeliverCycleMutation()
   const undoDeliverMutation = useUndoDeliverCycleMutation()
@@ -84,15 +83,19 @@ export function CyclesPage() {
                 </div>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">{t("Order Window")}</p>
-                <p className="text-sm">
-                  {latestCycle.orderWindowOpensAt.toLocaleDateString()} – {latestCycle.orderWindowClosesAt.toLocaleDateString()}
-                </p>
+                <p className="text-sm font-medium text-muted-foreground">{t("Cycle Started")}</p>
+                <p className="text-sm">{latestCycle.createdAt.toLocaleDateString()}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">{t("Delivery Date")}</p>
                 <p className="text-sm">{latestCycle.deliveryDate.toLocaleDateString()}</p>
               </div>
+              {latestCycle.nextCycleStartDate && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">{t("Next order window opens")}</p>
+                  <p className="text-sm">{latestCycle.nextCycleStartDate.toLocaleDateString()}</p>
+                </div>
+              )}
             </div>
 
             {latestCycle.holidayMessage && (
@@ -177,19 +180,11 @@ export function CyclesPage() {
 
       {latestCycle && (
         <>
-          <ConfirmActionDialog
+          <CloseCycleModal
             open={isCloseConfirmOpen}
             onOpenChange={setIsCloseConfirmOpen}
-            title={t("Confirm Close Ordering")}
-            description={t("This will close ordering for cycle {{label}}. No more orders can be added to it.", {
-              label: latestCycle.label,
-            })}
-            confirmLabel={t("Close Ordering")}
-            pendingLabel={t("Closing...")}
-            isPending={closeMutation.isPending}
-            onConfirm={() =>
-              closeMutation.mutate(latestCycle.id, { onSuccess: () => setIsCloseConfirmOpen(false) })
-            }
+            cycleId={latestCycle.id}
+            cycleLabel={latestCycle.label}
           />
           <ConfirmActionDialog
             open={isDeliverConfirmOpen}

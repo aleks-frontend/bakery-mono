@@ -12,17 +12,19 @@ import { Input } from "@/components/ui/input"
 import { Loader2 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
-import { useStartCycleSuggestionQuery } from "@/hooks/useStartCycleSuggestionQuery"
-import { useStartCycleMutation } from "@/hooks/useStartCycleMutation"
+import { useNextCycleStartSuggestionQuery } from "@/hooks/useNextCycleStartSuggestionQuery"
+import { useCloseCycleMutation } from "@/hooks/useCloseCycleMutation"
 
-interface StartCycleModalProps {
+interface CloseCycleModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  cycleId: string
+  cycleLabel: string
 }
 
 const emptyForm = {
-  label: "",
-  deliveryDate: "",
+  nextCycleStartDate: "",
+  holidayMessage: "",
 }
 
 function toDateInputValue(date: Date): string {
@@ -36,10 +38,10 @@ function fromDateInputValue(value: string): Date {
   return new Date(`${value}T00:00:00`)
 }
 
-export function StartCycleModal({ open, onOpenChange }: StartCycleModalProps) {
+export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: CloseCycleModalProps) {
   const { t } = useTranslation()
-  const { data: suggestion, isLoading: suggestionLoading } = useStartCycleSuggestionQuery(open)
-  const startMutation = useStartCycleMutation()
+  const { data: suggestion, isLoading: suggestionLoading } = useNextCycleStartSuggestionQuery(open)
+  const closeMutation = useCloseCycleMutation()
 
   const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -47,8 +49,8 @@ export function StartCycleModal({ open, onOpenChange }: StartCycleModalProps) {
   useEffect(() => {
     if (open && suggestion) {
       setForm({
-        label: suggestion.label,
-        deliveryDate: toDateInputValue(suggestion.deliveryDate),
+        nextCycleStartDate: toDateInputValue(suggestion.nextCycleStartDate),
+        holidayMessage: "",
       })
       setErrors({})
     }
@@ -68,8 +70,7 @@ export function StartCycleModal({ open, onOpenChange }: StartCycleModalProps) {
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {}
-    if (!form.label.trim()) newErrors.label = t("Required")
-    if (!form.deliveryDate) newErrors.deliveryDate = t("Required")
+    if (!form.nextCycleStartDate) newErrors.nextCycleStartDate = t("Required")
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -78,10 +79,13 @@ export function StartCycleModal({ open, onOpenChange }: StartCycleModalProps) {
   const handleSubmit = () => {
     if (!validate()) return
 
-    startMutation.mutate(
+    closeMutation.mutate(
       {
-        label: form.label.trim(),
-        deliveryDate: fromDateInputValue(form.deliveryDate),
+        id: cycleId,
+        input: {
+          nextCycleStartDate: fromDateInputValue(form.nextCycleStartDate),
+          holidayMessage: form.holidayMessage.trim() || null,
+        },
       },
       { onSuccess: () => onOpenChange(false) }
     )
@@ -91,9 +95,11 @@ export function StartCycleModal({ open, onOpenChange }: StartCycleModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader className="pr-10">
-          <DialogTitle>{t("Start Next Cycle")}</DialogTitle>
+          <DialogTitle>{t("Confirm Close Ordering")}</DialogTitle>
           <DialogDescription>
-            {t("Suggested delivery date is pre-filled — adjust it if this cycle needs a different one.")}
+            {t("This will close ordering for cycle {{label}}. No more orders can be added to it.", {
+              label: cycleLabel,
+            })}
           </DialogDescription>
         </DialogHeader>
 
@@ -105,43 +111,50 @@ export function StartCycleModal({ open, onOpenChange }: StartCycleModalProps) {
         ) : (
           <form autoComplete="off" onSubmit={(e) => e.preventDefault()} className="space-y-4 py-2">
             <div>
-              <label className="text-sm font-medium">{t("Label")} *</label>
+              <label className="text-sm font-medium">{t("Next order window opens")} *</label>
               <Input
-                className={cn("mt-1", errors.label && "border-destructive")}
-                value={form.label}
-                onChange={(e) => setField("label", e.target.value)}
+                className={cn("mt-1", errors.nextCycleStartDate && "border-destructive")}
+                type="date"
+                value={form.nextCycleStartDate}
+                onChange={(e) => setField("nextCycleStartDate", e.target.value)}
               />
-              {errors.label && <p className="text-xs text-destructive mt-1">{errors.label}</p>}
+              {errors.nextCycleStartDate && (
+                <p className="text-xs text-destructive mt-1">{errors.nextCycleStartDate}</p>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                {t("Shown to customers on the order form while ordering is closed.")}
+              </p>
             </div>
 
             <div>
-              <label className="text-sm font-medium">{t("Delivery Date")} *</label>
-              <Input
-                className={cn("mt-1", errors.deliveryDate && "border-destructive")}
-                type="date"
-                value={form.deliveryDate}
-                onChange={(e) => setField("deliveryDate", e.target.value)}
+              <label className="text-sm font-medium">{t("Holiday Message")}</label>
+              <textarea
+                value={form.holidayMessage}
+                onChange={(e) => setField("holidayMessage", e.target.value)}
+                rows={2}
+                placeholder={t("Shown to customers while ordering is closed (optional)")}
+                className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-none"
               />
-              {errors.deliveryDate && <p className="text-xs text-destructive mt-1">{errors.deliveryDate}</p>}
             </div>
           </form>
         )}
 
-        <DialogFooter className="mt-2 border-t pt-4">
+        <DialogFooter className="gap-2 mt-2 border-t pt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={closeMutation.isPending}>
+            {t("Cancel")}
+          </Button>
           <Button
-            type="button"
-            size="lg"
-            disabled={startMutation.isPending || suggestionLoading}
+            variant="default"
+            disabled={closeMutation.isPending || suggestionLoading}
             onClick={handleSubmit}
-            className="w-full font-semibold text-base"
           >
-            {startMutation.isPending ? (
+            {closeMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {t("Starting...")}
+                {t("Closing...")}
               </>
             ) : (
-              t("Start Cycle")
+              t("Close Ordering")
             )}
           </Button>
         </DialogFooter>

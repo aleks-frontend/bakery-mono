@@ -28,7 +28,7 @@ publicRouter.get("/articles", async (_req, res) => {
       available: computeAvailability(article, orderedQty.get(article.id) ?? 0),
     })),
     acceptingOrders: currentCycle != null,
-    reopenDate: null,
+    reopenDate: currentCycle ? null : (latestCycle?.nextCycleStartDate ?? null),
     holidayMessage: currentCycle ? null : (latestCycle?.holidayMessage ?? null),
   });
 });

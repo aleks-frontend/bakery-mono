@@ -264,28 +264,21 @@ Currently `apps/order-form/src/App.tsx` filters unavailable articles out entirel
 
 ## Phase 20 — Fix "Start Next Cycle" Suggested-Date Bug
 
-Reminder only, collected during a baker meeting — not yet implemented.
+- [x] Done — superseded by a redesign of the whole close/start-cycle flow rather than a point patch. The original bug (`suggestNextCycleDates()` shifting a stale last cycle's own dates forward by a flat `+7 days` with no reference to `now`) is eliminated by construction: the new `suggestCycleStart()` in `apps/backend/src/lib/cycleDates.ts` always anchors `orderWindowOpensAt` to `now()` at the moment "Start Next Cycle" is actually clicked — nothing is ever derived from a historical cycle's own stored dates anymore. See Phase 21 below for the full redesign, which folds this fix in.
 
-Bug: `GET /api/cycles/next-suggestion` (used to pre-fill `StartCycleModal`'s dates) is showing dates from the past instead of sensible upcoming ones. Root cause identified in `apps/backend/src/lib/cycleDates.ts`'s `suggestNextCycleDates()`: when a previous cycle exists, it blindly shifts that cycle's own `orderWindowOpensAt`/`orderWindowClosesAt`/`deliveryDate` forward by a fixed **+7 days**, with no reference to today's actual date (`now` is only ever consulted in the no-previous-cycle fallback branch). If the most recent cycle in the database is more than a week old — e.g. the baker skipped starting a cycle for a stretch, or (as happened during this session) historical cycles get seeded/backfilled — the "+7 days from last cycle" math lands in the past rather than snapping forward to the next real upcoming Saturday/Monday/Wednesday.
+## Phase 21 — Simplified Close/Start-Cycle Flow, Holiday Message Moved to Close-Time
 
-- [ ] Fix `suggestNextCycleDates()` to anchor off `now` whenever the naive +7-day shift would land in the past (e.g. keep shifting by 7-day increments from the last cycle until the suggested `orderWindowOpensAt` is >= today, or just fall back to the same `nextOrSameWeekday(now, 6)` pattern already used when there's no previous cycle at all)
-- [ ] Decide whether "shift-by-7-from-last-cycle" should be abandoned entirely in favor of always deriving from `now` (simpler, but loses the "preserve holiday-adjusted gaps between open/close/delivery" behavior the current doc comment calls out as intentional) — needs a decision, not just a patch
-- [ ] Verify against a realistic gap scenario (last real cycle several weeks old) once fixed, not just the happy-path "cycle started last week" case that presumably passed before
+Implemented. Redesigned around how the bakery actually operates, combining the Phase 20 bug fix with the original "move holiday message to close-time" ask from a baker meeting:
 
-## Phase 21 — Per-Locale Holiday Messages, Set on Cycle Close
+- **`Cycle.orderWindowClosesAt` removed** (schema migration `20260810095347_simplify_cycle_dates`) — it was never enforced (no cron; closing is a manual click) and never shown to customers, purely decorative.
+- **`Cycle.nextCycleStartDate DateTime?` added** — set by the baker when they close ordering (`CloseCycleModal.tsx`, new), suggested as `now + 5 days` (`suggestNextCycleStartDate()`). This is the date customers see on the order form while no cycle is open (`GET /api/public/articles`'s `reopenDate`, now correctly wired instead of the previous hardcoded `null`).
+- **`holidayMessage` moved to "Close Ordering"** — same field, now entered in `CloseCycleModal` (optional textarea) instead of `StartCycleModal`. When set, it fully replaces the default "orders open on X" line in the order-form's `OrderStatusBanner` rather than being shown alongside it.
+- **`deliveryDate` stays at "Start Next Cycle" time** (confirmed with the user — it's genuinely customer-facing, it's in the order confirmation email, and can't be guessed days in advance at close-time), now suggested as `now + 5 days` via `suggestCycleStart()`. `StartCycleModal` shrank to just `label` + `deliveryDate`.
+- **`Cycle.orderWindowOpensAt` removed too** (follow-up migration `20260810104548_drop_order_window_opens_at`) — once the flow above landed, this column was always set to `new Date()` at the exact instant a cycle is created, making it a redundant duplicate of `createdAt` (which already defaults to `now()` on the same row) with no independent value and no logic anywhere reading it (`getCurrentCycle()` only checks `status`; "latest cycle" queries sort by `deliveryDate`). The admin panel's "Current Cycle" tile now shows `createdAt` instead, relabeled "Cycle Started".
+- New suggestion endpoints: `GET /api/cycles/next-cycle-start-suggestion` and `GET /api/cycles/start-suggestion`, replacing the old single `GET /api/cycles/next-suggestion`.
+- `packages/schemas`/`packages/api-client` rebuilt (`npm run build -w @bakery/schemas -w @bakery/api-client`) per the established Phase 18 gotcha before consuming apps would see the new types.
 
-Reminder only, collected during a baker meeting — not yet implemented.
-
-Two related asks:
-
-1. **Move where the holiday message gets set.** Today `holidayMessage` can only be entered in `StartCycleModal` (`apps/admin-panel/src/components/StartCycleModal.tsx`) — i.e. only when *starting* the next cycle. But the actual baker workflow is: closing ordering for a holiday and wanting customers to see an explanatory message while there's no open cycle (`GET /api/public/articles` falls back to `latestCycle?.holidayMessage` exactly in that no-open-cycle state, per `apps/backend/src/routes/public.ts`). There's currently no way to set/edit a holiday message at the point of *closing* a cycle — only retroactively via whatever gets typed into the next cycle's start form, which is backwards for this use case.
-2. **Three locale-specific fields instead of one.** `Cycle.holidayMessage` is currently a single `String?` column, always shown as-is regardless of the customer's selected language (order-form's `OrderStatusBanner` just renders it verbatim). Needs to become three fields — Serbian, Hungarian, English — so the displayed message matches whatever locale the customer has selected, consistent with how the rest of order-form's UI is already fully trilingual.
-
-- [ ] Schema change: replace `Cycle.holidayMessage String?` with three nullable string columns (e.g. `holidayMessageSr`, `holidayMessageHu`, `holidayMessageEn`) — needs a migration; decide fallback behavior if only some locales are filled in (e.g. fall back to English, or hide the banner text for a locale with no message)
-- [ ] Add a way to set the holiday message as part of the "Close Ordering" admin action (`PATCH /api/cycles/:id/close` flow), not just at cycle-start — likely a small modal/form prompt at close time, editable afterward too since a message may need correcting after the fact
-- [ ] Update `GET /api/public/articles` to return the right field for the customer's requested locale (or all three, letting the frontend pick) instead of the single `holidayMessage` string
-- [ ] Update `OrderStatusBanner` (order-form) to render the locale-matched message instead of a single hardcoded string
-- [ ] Decide what happens to `StartCycleModal`'s existing holiday-message field — remove it now that Close is the right place to set it, or keep both entry points
+**Not done** — the second, separate ask from that same baker meeting (three locale-specific holiday-message fields — `holidayMessageSr`/`holidayMessageHu`/`holidayMessageEn` instead of one, so the order-form banner matches the customer's selected language) remains open if wanted later; today's single `holidayMessage` string is still shown verbatim regardless of locale.
 
 ## Phase 22 — Article Categories, Grouped Workshop List
 
