@@ -74,7 +74,9 @@ cyclesRouter.patch("/:id/close", async (req, res) => {
       data: {
         status: "CLOSED",
         nextCycleStartDate: parsed.data.nextCycleStartDate,
-        holidayMessage: parsed.data.holidayMessage ?? null,
+        holidayMessageEn: parsed.data.holidayMessageEn ?? null,
+        holidayMessageSr: parsed.data.holidayMessageSr ?? null,
+        holidayMessageHu: parsed.data.holidayMessageHu ?? null,
       },
     });
     res.json(cycle);

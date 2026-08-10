@@ -35,10 +35,17 @@ export const publicArticleSchema = z.object({
 });
 export type PublicArticle = z.infer<typeof publicArticleSchema>;
 
+export const holidayMessageByLocaleSchema = z.object({
+  en: z.string().nullable(),
+  sr: z.string().nullable(),
+  hu: z.string().nullable(),
+});
+export type HolidayMessageByLocale = z.infer<typeof holidayMessageByLocaleSchema>;
+
 export const publicArticlesResponseSchema = z.object({
   articles: z.array(publicArticleSchema),
   acceptingOrders: z.boolean(),
   reopenDate: z.coerce.date().nullable(),
-  holidayMessage: z.string().nullable(),
+  holidayMessage: holidayMessageByLocaleSchema,
 });
 export type PublicArticlesResponse = z.infer<typeof publicArticlesResponseSchema>;

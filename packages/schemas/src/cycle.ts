@@ -9,7 +9,9 @@ export const cycleSchema = z.object({
   status: cycleStatusSchema,
   deliveryDate: z.coerce.date(),
   nextCycleStartDate: z.coerce.date().nullable(),
-  holidayMessage: z.string().nullable(),
+  holidayMessageEn: z.string().nullable(),
+  holidayMessageSr: z.string().nullable(),
+  holidayMessageHu: z.string().nullable(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
 });
@@ -23,7 +25,9 @@ export type StartCycleInput = z.infer<typeof startCycleSchema>;
 
 export const closeCycleSchema = z.object({
   nextCycleStartDate: z.coerce.date(),
-  holidayMessage: z.string().nullable().optional(),
+  holidayMessageEn: z.string().nullable().optional(),
+  holidayMessageSr: z.string().nullable().optional(),
+  holidayMessageHu: z.string().nullable().optional(),
 });
 export type CloseCycleInput = z.infer<typeof closeCycleSchema>;
 

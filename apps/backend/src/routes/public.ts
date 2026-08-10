@@ -29,7 +29,11 @@ publicRouter.get("/articles", async (_req, res) => {
     })),
     acceptingOrders: currentCycle != null,
     reopenDate: currentCycle ? null : (latestCycle?.nextCycleStartDate ?? null),
-    holidayMessage: currentCycle ? null : (latestCycle?.holidayMessage ?? null),
+    holidayMessage: {
+      en: currentCycle ? null : (latestCycle?.holidayMessageEn ?? null),
+      sr: currentCycle ? null : (latestCycle?.holidayMessageSr ?? null),
+      hu: currentCycle ? null : (latestCycle?.holidayMessageHu ?? null),
+    },
   });
 });
 

@@ -24,7 +24,9 @@ interface CloseCycleModalProps {
 
 const emptyForm = {
   nextCycleStartDate: "",
-  holidayMessage: "",
+  holidayMessageEn: "",
+  holidayMessageSr: "",
+  holidayMessageHu: "",
 }
 
 function toDateInputValue(date: Date): string {
@@ -50,7 +52,9 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
     if (open && suggestion) {
       setForm({
         nextCycleStartDate: toDateInputValue(suggestion.nextCycleStartDate),
-        holidayMessage: "",
+        holidayMessageEn: "",
+        holidayMessageSr: "",
+        holidayMessageHu: "",
       })
       setErrors({})
     }
@@ -84,7 +88,9 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
         id: cycleId,
         input: {
           nextCycleStartDate: fromDateInputValue(form.nextCycleStartDate),
-          holidayMessage: form.holidayMessage.trim() || null,
+          holidayMessageEn: form.holidayMessageEn.trim() || null,
+          holidayMessageSr: form.holidayMessageSr.trim() || null,
+          holidayMessageHu: form.holidayMessageHu.trim() || null,
         },
       },
       { onSuccess: () => onOpenChange(false) }
@@ -126,15 +132,41 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
               </p>
             </div>
 
-            <div>
-              <label className="text-sm font-medium">{t("Holiday Message")}</label>
-              <textarea
-                value={form.holidayMessage}
-                onChange={(e) => setField("holidayMessage", e.target.value)}
-                rows={2}
-                placeholder={t("Shown to customers while ordering is closed (optional)")}
-                className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-none"
-              />
+            <div className="space-y-3">
+              <p className="text-sm font-medium">{t("Holiday Message")}</p>
+              <p className="text-xs text-muted-foreground -mt-2">
+                {t("Shown to customers while ordering is closed (optional)")}
+              </p>
+
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">{t("English")}</label>
+                <textarea
+                  value={form.holidayMessageEn}
+                  onChange={(e) => setField("holidayMessageEn", e.target.value)}
+                  rows={2}
+                  className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">{t("Serbian")}</label>
+                <textarea
+                  value={form.holidayMessageSr}
+                  onChange={(e) => setField("holidayMessageSr", e.target.value)}
+                  rows={2}
+                  className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">{t("Hungarian")}</label>
+                <textarea
+                  value={form.holidayMessageHu}
+                  onChange={(e) => setField("holidayMessageHu", e.target.value)}
+                  rows={2}
+                  className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-none"
+                />
+              </div>
             </div>
           </form>
         )}

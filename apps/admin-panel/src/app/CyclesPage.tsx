@@ -98,8 +98,27 @@ export function CyclesPage() {
               )}
             </div>
 
-            {latestCycle.holidayMessage && (
-              <p className="text-sm text-muted-foreground italic">{latestCycle.holidayMessage}</p>
+            {(latestCycle.holidayMessageEn || latestCycle.holidayMessageSr || latestCycle.holidayMessageHu) && (
+              <div className="space-y-1">
+                {latestCycle.holidayMessageEn && (
+                  <p className="text-sm text-muted-foreground italic">
+                    <span className="font-medium not-italic">{t("English")}: </span>
+                    {latestCycle.holidayMessageEn}
+                  </p>
+                )}
+                {latestCycle.holidayMessageSr && (
+                  <p className="text-sm text-muted-foreground italic">
+                    <span className="font-medium not-italic">{t("Serbian")}: </span>
+                    {latestCycle.holidayMessageSr}
+                  </p>
+                )}
+                {latestCycle.holidayMessageHu && (
+                  <p className="text-sm text-muted-foreground italic">
+                    <span className="font-medium not-italic">{t("Hungarian")}: </span>
+                    {latestCycle.holidayMessageHu}
+                  </p>
+                )}
+              </div>
             )}
 
             <Separator />

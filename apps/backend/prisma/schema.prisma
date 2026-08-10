@@ -37,7 +37,9 @@ model Cycle {
   status             CycleStatus @default(OPEN)
   deliveryDate       DateTime
   nextCycleStartDate DateTime?
-  holidayMessage     String?
+  holidayMessageEn   String?
+  holidayMessageSr   String?
+  holidayMessageHu   String?
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
 
