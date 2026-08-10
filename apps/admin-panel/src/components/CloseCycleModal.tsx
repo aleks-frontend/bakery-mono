@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
 import { Loader2 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
@@ -47,6 +48,7 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
 
   const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [holidayMessageEnabled, setHolidayMessageEnabled] = useState(false)
 
   useEffect(() => {
     if (open && suggestion) {
@@ -57,6 +59,7 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
         holidayMessageHu: "",
       })
       setErrors({})
+      setHolidayMessageEnabled(false)
     }
   }, [open, suggestion])
 
@@ -64,8 +67,16 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
     if (!open) {
       setForm(emptyForm)
       setErrors({})
+      setHolidayMessageEnabled(false)
     }
   }, [open])
+
+  const handleHolidayMessageToggle = (enabled: boolean) => {
+    setHolidayMessageEnabled(enabled)
+    if (!enabled) {
+      setForm((prev) => ({ ...prev, holidayMessageEn: "", holidayMessageSr: "", holidayMessageHu: "" }))
+    }
+  }
 
   const setField = (field: keyof typeof emptyForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -133,40 +144,52 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
             </div>
 
             <div className="space-y-3">
-              <p className="text-sm font-medium">{t("Holiday Message")}</p>
-              <p className="text-xs text-muted-foreground -mt-2">
-                {t("Shown to customers while ordering is closed (optional)")}
-              </p>
-
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">{t("English")}</label>
-                <textarea
-                  value={form.holidayMessageEn}
-                  onChange={(e) => setField("holidayMessageEn", e.target.value)}
-                  rows={2}
-                  className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-none"
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">{t("Holiday Message")}</p>
+                <Switch
+                  id="holiday-message-toggle"
+                  checked={holidayMessageEnabled}
+                  onCheckedChange={handleHolidayMessageToggle}
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">{t("Serbian")}</label>
-                <textarea
-                  value={form.holidayMessageSr}
-                  onChange={(e) => setField("holidayMessageSr", e.target.value)}
-                  rows={2}
-                  className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-none"
-                />
-              </div>
+              {holidayMessageEnabled && (
+                <>
+                  <p className="text-xs text-muted-foreground -mt-2">
+                    {t("Shown to customers while ordering is closed (optional)")}
+                  </p>
 
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">{t("Hungarian")}</label>
-                <textarea
-                  value={form.holidayMessageHu}
-                  onChange={(e) => setField("holidayMessageHu", e.target.value)}
-                  rows={2}
-                  className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-none"
-                />
-              </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">{t("English")}</label>
+                    <textarea
+                      value={form.holidayMessageEn}
+                      onChange={(e) => setField("holidayMessageEn", e.target.value)}
+                      rows={2}
+                      className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">{t("Serbian")}</label>
+                    <textarea
+                      value={form.holidayMessageSr}
+                      onChange={(e) => setField("holidayMessageSr", e.target.value)}
+                      rows={2}
+                      className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">{t("Hungarian")}</label>
+                    <textarea
+                      value={form.holidayMessageHu}
+                      onChange={(e) => setField("holidayMessageHu", e.target.value)}
+                      rows={2}
+                      className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-none"
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </form>
         )}
