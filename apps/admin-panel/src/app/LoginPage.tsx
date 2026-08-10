@@ -37,7 +37,11 @@ export function LoginPage() {
     const { error: signInError } = await signIn.email(values)
 
     if (signInError) {
-      setAuthError(t("Invalid email or password"))
+      setAuthError(
+        signInError.status === 401
+          ? t("Invalid email or password")
+          : t("Could not reach the server. Please try again.")
+      )
     }
   }
 

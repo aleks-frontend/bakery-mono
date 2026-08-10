@@ -229,6 +229,7 @@
   "Log in": "Prijavi se",
   "Log out": "Odjavi se",
   "Invalid email or password": "Pogrešan email ili lozinka",
+  "Could not reach the server. Please try again.": "Server nije dostupan. Pokušajte ponovo.",
   "Invalid email": "Nevažeći email",
   "Dashboard": "Kontrolna tabla",
   "Total Orders": "Ukupno porudžbina",

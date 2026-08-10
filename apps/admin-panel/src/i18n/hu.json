@@ -229,6 +229,7 @@
   "Log in": "Bejelentkezés",
   "Log out": "Kijelentkezés",
   "Invalid email or password": "Érvénytelen email vagy jelszó",
+  "Could not reach the server. Please try again.": "A szerver nem elérhető. Próbálja újra.",
   "Invalid email": "Érvénytelen email",
   "Dashboard": "Irányítópult",
   "Total Orders": "Összes rendelés",

@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
+import toast from "react-hot-toast"
 import { LanguageSelector } from "./LanguageSelector"
 import { BackendHealthBadge } from "./BackendHealthBadge"
 import { Separator } from "./ui/separator"
@@ -13,7 +14,12 @@ export function Header() {
   const { data: session } = useSession()
 
   async function handleSignOut() {
-    await signOut()
+    try {
+      await signOut()
+    } catch {
+      toast.error(t("Could not reach the server. Please try again."))
+      return
+    }
     navigate("/login", { replace: true })
   }
 

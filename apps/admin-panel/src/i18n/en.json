@@ -229,6 +229,7 @@
   "Log in": "Log in",
   "Log out": "Log out",
   "Invalid email or password": "Invalid email or password",
+  "Could not reach the server. Please try again.": "Could not reach the server. Please try again.",
   "Invalid email": "Invalid email",
   "Dashboard": "Dashboard",
   "Total Orders": "Total Orders",
