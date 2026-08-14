@@ -54,11 +54,11 @@ export function CyclesPage() {
   return (
     <div className="container mx-auto py-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t("Cycles")}</h1>
+        <h1 className="font-serif text-3xl font-semibold tracking-tight">{t("Cycles")}</h1>
         <p className="text-muted-foreground">{t("Manage the weekly ordering cycle")}</p>
       </div>
 
-      <div className="rounded-md border bg-white p-6 space-y-4">
+      <div className="rounded-md border bg-card p-6 space-y-4">
         <h2 className="text-lg font-semibold">{t("Current Cycle")}</h2>
 
         {!latestCycle ? (
@@ -168,7 +168,7 @@ export function CyclesPage() {
       </div>
 
       {history.length > 0 && (
-        <div className="rounded-md border bg-white">
+        <div className="rounded-md border bg-card">
           <div className="p-4 border-b">
             <h2 className="text-lg font-semibold">{t("Cycle History")}</h2>
           </div>

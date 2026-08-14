@@ -9,9 +9,9 @@ interface StatusBadgeProps {
 }
 
 const statusColors: Record<OrderStatus, string> = {
-  NOT_RECEIVED: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  IN_PROGRESS: "bg-blue-100 text-blue-800 border-blue-200",
-  DELIVERED: "bg-green-100 text-green-800 border-green-200",
+  NOT_RECEIVED: "bg-warning-soft text-warning border-warning/30",
+  IN_PROGRESS: "bg-accent text-primary border-primary/30",
+  DELIVERED: "bg-success-soft text-success border-success/30",
 }
 
 /** Reuses the existing (already-translated) human-readable labels rather than adding new i18n keys. */

@@ -35,7 +35,7 @@ export function OrderItemRow({
   );
 
   return (
-    <div className="p-2 bg-[rgb(250,248,244)] border border-bakery-border rounded-lg mb-3 last:mb-0">
+    <div className="p-2 bg-bakery-bg-soft border border-bakery-border rounded-lg mb-3 last:mb-0">
       <div className="flex gap-3 items-end">
         <Controller
           name={`items.${index}.articleId`}
@@ -93,7 +93,7 @@ export function OrderItemRow({
         <button
           type="button"
           onClick={() => onRemove(index)}
-          className="flex-shrink-0 text-red-700 py-2 px-2.5 rounded-xl hover:text-red-800 remove-btn"
+          className="flex-shrink-0 text-bakery-destructive py-2 px-2.5 rounded-xl hover:bg-bakery-destructive-soft remove-btn"
           aria-label="Remove item"
         >
           ✖

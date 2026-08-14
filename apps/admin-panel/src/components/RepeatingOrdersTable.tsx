@@ -178,7 +178,7 @@ export function RepeatingOrdersTable({
   }, [onSelectionChange, rowSelection, table])
 
   return (
-    <div className="rounded-md border bg-white">
+    <div className="rounded-md border bg-card">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (

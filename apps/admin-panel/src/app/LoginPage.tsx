@@ -49,9 +49,12 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted/30">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="w-full max-w-sm space-y-4 rounded-lg border bg-white p-6 shadow-sm"
+        className="w-full max-w-sm space-y-4 rounded-xl border bg-card p-6 shadow-sm"
       >
-        <h1 className="text-xl font-bold">{t("Log in")}</h1>
+        <div className="flex flex-col items-center gap-2 pb-2 text-center">
+          <img src="/logo.png" alt={t("Logo")} className="h-14 w-auto" />
+          <h1 className="font-serif text-xl font-semibold">{t("Log in")}</h1>
+        </div>
 
         <div className="space-y-1.5">
           <label htmlFor="email" className="text-sm font-medium">

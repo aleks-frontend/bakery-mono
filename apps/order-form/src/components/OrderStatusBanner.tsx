@@ -40,9 +40,9 @@ export function OrderStatusBanner({ show, reopenDate, holidayMessage }: OrderSta
   if (!show) return null;
 
   return (
-    <div className="bg-blue-50 border-2 border-blue-500 rounded-xl py-5 px-6 my-6 mx-auto max-w-[720px] text-left text-blue-900 font-light text-base leading-relaxed shadow-md">
+    <div className="bg-bakery-highlight-soft border border-bakery-highlight rounded-xl py-5 px-6 my-6 mx-auto max-w-[720px] text-left text-bakery-text font-light text-base leading-relaxed shadow-sm">
       {resolvedHolidayMessage ? (
-        <div className="font-semibold text-lg">{resolvedHolidayMessage}</div>
+        <div className="font-serif font-semibold text-lg">{resolvedHolidayMessage}</div>
       ) : (
         <div>
           {reopenDate
@@ -56,7 +56,7 @@ export function OrderStatusBanner({ show, reopenDate, holidayMessage }: OrderSta
           href={websiteUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-900 underline font-bold transition-opacity hover:opacity-80"
+          className="text-bakery-primary underline font-bold transition-opacity hover:opacity-80"
         >
           {t("our offer and learn about how we prepare our products")}
         </a>

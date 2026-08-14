@@ -9,9 +9,9 @@ interface CycleStatusBadgeProps {
 }
 
 const statusColors: Record<CycleStatus, string> = {
-  OPEN: "bg-green-100 text-green-800 border-green-200",
-  CLOSED: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  COMPLETED: "bg-gray-100 text-gray-700 border-gray-200",
+  OPEN: "bg-success-soft text-success border-success/30",
+  CLOSED: "bg-warning-soft text-warning border-warning/30",
+  COMPLETED: "bg-muted text-muted-foreground border-border",
 }
 
 const statusLabelKey: Record<CycleStatus, string> = {

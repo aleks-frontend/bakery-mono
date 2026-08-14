@@ -14,19 +14,19 @@ function App() {
 
   return (
     <>
-      <header className="max-w-[720px] mx-auto mb-6">
+      <header className="max-w-[720px] mx-auto mb-6 pb-4 border-b border-bakery-border">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3">
             <img
               src="/logo.png"
               alt="Bakery Logo"
-              className="max-w-[50px] max-h-[50px] w-auto h-auto object-contain drop-shadow-[0_4px_8px_rgba(198,134,66,0.3)] hover:drop-shadow-[0_6px_12px_rgba(198,134,66,0.4)] transition-all duration-300"
+              className="max-w-[50px] max-h-[50px] w-auto h-auto object-contain drop-shadow-[0_4px_8px_rgba(196,112,59,0.3)] hover:drop-shadow-[0_6px_12px_rgba(196,112,59,0.4)] transition-all duration-300"
             />
             <div className="flex flex-col text-left">
-              <span className="text-[16px] font-bold uppercase">
+              <span className="font-serif text-[19px] font-semibold uppercase tracking-wide text-bakery-text">
                 LISZT: RAPSZÓDIA
               </span>
-              <span className="text-[12px]">{t("Hleb / Pastry / Pizza")}</span>
+              <span className="text-[12px] text-bakery-text/60">{t("Hleb / Pastry / Pizza")}</span>
             </div>
           </div>
           <LanguageSelector />
@@ -34,7 +34,7 @@ function App() {
       </header>
 
       {isError ? (
-        <div className="max-w-[720px] mx-auto my-6 bg-red-50 border-2 border-red-400 rounded-xl py-5 px-6 text-red-900 text-center">
+        <div className="max-w-[720px] mx-auto my-6 bg-bakery-destructive-soft border border-bakery-destructive/30 rounded-xl py-5 px-6 text-bakery-destructive text-center">
           {t("Something went wrong loading the order form. Please try again in a moment.")}
         </div>
       ) : (

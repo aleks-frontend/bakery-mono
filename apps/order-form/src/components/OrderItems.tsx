@@ -47,9 +47,10 @@ export function OrderItems({ control, articles, onUpdate }: OrderItemsProps) {
       <button
         type="button"
         onClick={handleAdd}
-        className="mt-3 rounded-xl border-none py-2.5 px-4 text-[0.95rem] font-medium cursor-pointer transition-colors bg-bakery-primary text-white hover:bg-bakery-primary-hover hover:-translate-y-px active:translate-y-0 add-article"
+        className="mt-3 inline-flex items-center gap-1.5 rounded-xl border-none py-2.5 px-4 text-[0.95rem] font-medium cursor-pointer transition-colors bg-bakery-primary text-white hover:bg-bakery-primary-hover hover:-translate-y-px active:translate-y-0 add-article"
       >
-        {t("➕ Add article")}
+        <span aria-hidden className="text-white text-base leading-none">+</span>
+        {t("Add article")}
       </button>
     </>
   );

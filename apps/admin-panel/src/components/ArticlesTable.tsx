@@ -179,8 +179,8 @@ export function ArticlesTable({
               className={cn(
                 "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
                 availableNow
-                  ? "bg-green-100 text-green-700"
-                  : "bg-red-100 text-red-700"
+                  ? "bg-success-soft text-success"
+                  : "bg-destructive/10 text-destructive"
               )}
             >
               {availableNow ? t("In stock") : t("Sold out")}
@@ -240,7 +240,7 @@ export function ArticlesTable({
 
   return (
     <div className="space-y-2">
-      <div className="rounded-md border bg-white">
+      <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

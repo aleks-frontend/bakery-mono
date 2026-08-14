@@ -47,13 +47,13 @@ export function OrderSummaryModal({
       isOpen={isOpen}
       onRequestClose={onClose}
       contentLabel={t("Confirm Order")}
-      className="bg-bakery-card rounded-2xl p-8 max-w-[500px] w-[90%] max-h-[90vh] overflow-y-auto shadow-2xl mx-auto outline-none"
-      overlayClassName="fixed inset-0 bg-black/50 z-[1000] flex items-center justify-center p-4"
+      className="bg-bakery-card rounded-2xl p-8 max-w-[500px] w-[90%] max-h-[90vh] overflow-y-auto shadow-bakery mx-auto outline-none"
+      overlayClassName="fixed inset-0 bg-bakery-text/50 z-[1000] flex items-center justify-center p-4"
       shouldCloseOnOverlayClick={!isPending}
       shouldCloseOnEsc={!isPending}
     >
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-2xl font-bold m-0">{t("Confirm Order")}</h3>
+        <h3 className="font-serif text-2xl font-semibold m-0">{t("Confirm Order")}</h3>
         <button
           type="button"
           onClick={onClose}
@@ -98,11 +98,11 @@ export function OrderSummaryModal({
               </div>
             ))}
           </div>
-          <div className="text-xl font-semibold text-right pt-4 border-t-2 border-bakery-border">
+          <div className="font-serif text-xl font-semibold text-right pt-4 border-t-2 border-bakery-border">
             {t("Total:")} {summary.totalPrice} {t("RSD")}
           </div>
           {summary.repeat && (
-            <div className="mt-4 text-sm bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 text-blue-900">
+            <div className="mt-4 text-sm bg-bakery-highlight-soft border border-bakery-highlight rounded-lg px-3 py-2.5 text-bakery-text">
               {t("This order will repeat automatically every week until you ask us to stop.")}
             </div>
           )}
@@ -119,7 +119,7 @@ export function OrderSummaryModal({
             <button
               type="button"
               onClick={onClose}
-              className="py-2.5 px-6 rounded-xl border-none font-medium cursor-pointer bg-bakery-border text-bakery-text hover:bg-[#d4c5b0]"
+              className="py-2.5 px-6 rounded-xl border-none font-medium cursor-pointer bg-bakery-border text-bakery-text hover:bg-[#d9c7ab]"
             >
               {t("Cancel")}
             </button>

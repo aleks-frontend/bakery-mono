@@ -222,7 +222,7 @@ export function OrdersPage() {
     <div className="container mx-auto py-8 space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("Orders")}</h1>
+          <h1 className="font-serif text-3xl font-semibold tracking-tight">{t("Orders")}</h1>
           <p className="text-muted-foreground">{t("Manage bread and pastry orders")}</p>
         </div>
         <Button onClick={() => setIsManualOrderModalOpen(true)}>

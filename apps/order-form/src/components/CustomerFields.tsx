@@ -45,7 +45,7 @@ export function CustomerFields({
           className="mt-1.5 w-full py-2.5 px-3 rounded-[10px] border border-bakery-border text-[0.95rem] transition-colors focus:outline-none focus:border-bakery-primary focus:shadow-focus bg-white"
         />
         {errors.recipient?.message && (
-          <span className="text-red-600 text-sm mt-1 block">
+          <span className="text-bakery-destructive text-sm mt-1 block">
             {errors.recipient.message}
           </span>
         )}
@@ -59,7 +59,7 @@ export function CustomerFields({
           className="mt-1.5 w-full py-2.5 px-3 rounded-[10px] border border-bakery-border text-[0.95rem] transition-colors focus:outline-none focus:border-bakery-primary focus:shadow-focus bg-white"
         />
         {errors.phone?.message && (
-          <span className="text-red-600 text-sm mt-1 block">
+          <span className="text-bakery-destructive text-sm mt-1 block">
             {errors.phone.message}
           </span>
         )}
@@ -73,7 +73,7 @@ export function CustomerFields({
           className="mt-1.5 w-full py-2.5 px-3 rounded-[10px] border border-bakery-border text-[0.95rem] transition-colors focus:outline-none focus:border-bakery-primary focus:shadow-focus bg-white"
         />
         {errors.email?.message && (
-          <span className="text-red-600 text-sm mt-1 block">
+          <span className="text-bakery-destructive text-sm mt-1 block">
             {errors.email.message}
           </span>
         )}
@@ -108,7 +108,7 @@ export function CustomerFields({
           )}
         />
         {errors.location?.message && (
-          <span className="text-red-600 text-sm mt-1 block">
+          <span className="text-bakery-destructive text-sm mt-1 block">
             {errors.location.message}
           </span>
         )}

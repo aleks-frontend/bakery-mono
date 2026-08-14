@@ -92,14 +92,14 @@ export function LanguageSelector() {
             title={t(titleKey)}
             onClick={() => handleLanguageChange(code)}
             className={`
-            w-9 h-9 border-2 rounded-lg bg-bakery-card flex items-center justify-center
+            w-9 h-9 border-2 rounded-lg bg-card flex items-center justify-center
             transition-all duration-200 shadow-sm p-0
-            hover:-translate-y-0.5 hover:shadow-md hover:border-bakery-primary
+            hover:-translate-y-0.5 hover:shadow-md hover:border-primary
             md:w-9 md:h-9
             ${
               active
-                ? "border-bakery-primary bg-[#C68642] shadow-[0_0_0_3px_rgba(198,134,66,0.2)]"
-                : "border-bakery-border"
+                ? "border-primary bg-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.2)]"
+                : "border-border"
             }
           `}
           >

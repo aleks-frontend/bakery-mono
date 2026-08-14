@@ -22,11 +22,11 @@ import { cn } from "@/lib/utils"
 import type { OrderStatus } from "@bakery/api-client"
 
 const STATUS_COLORS: Record<OrderStatus, string> = {
-  NOT_RECEIVED: "#d97706",
-  IN_PROGRESS: "#3b82f6",
-  DELIVERED: "#059669",
+  NOT_RECEIVED: "#c99a3e",
+  IN_PROGRESS: "#c4703b",
+  DELIVERED: "#7c8b6f",
 }
-const METRIC_COLOR = "#6366f1"
+const METRIC_COLOR = "#8b5a2b"
 
 function formatRsd(n: number): string {
   return `${n.toLocaleString("sr-Latn-RS")} RSD`
@@ -57,9 +57,9 @@ function ArticleNameTick({ x, y, payload }: { x?: number; y?: number; payload?: 
 
 function StatTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border bg-white p-4 shadow-sm">
+    <div className="rounded-lg border bg-card p-4 shadow-sm">
       <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="text-2xl font-bold tracking-tight">{value}</p>
+      <p className="font-serif text-2xl font-semibold tracking-tight text-foreground">{value}</p>
     </div>
   )
 }
@@ -74,7 +74,7 @@ function ChartCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="rounded-lg border bg-white p-4 shadow-sm">
+    <div className="rounded-lg border bg-card p-4 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-semibold">{title}</h2>
         {actions}
@@ -161,7 +161,7 @@ export function DashboardPage() {
     <div className="container mx-auto py-8 space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("Dashboard")}</h1>
+          <h1 className="font-serif text-3xl font-semibold tracking-tight">{t("Dashboard")}</h1>
           <p className="text-muted-foreground">
             {t("Showing")}: {stats.scope.cycleLabel}
             {stats.scope.isCurrent ? ` (${t("current cycle")})` : ""}

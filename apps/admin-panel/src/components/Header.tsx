@@ -32,16 +32,16 @@ export function Header() {
     )
 
   return (
-    <header className="border-b bg-white">
+    <header className="border-b bg-card">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between gap-4">
           <button
             onClick={() => navigate("/")}
             className="flex items-center gap-4 text-left"
           >
-            <img src="/logo.png" alt={t("Logo")} className="h-16 w-auto" />
+            <img src="/logo.png" alt={t("Logo")} className="h-14 w-auto" />
             <div className="flex flex-col">
-              <h1 className="text-2xl font-bold">{t("LISZT: RAPSZÓDIA")}</h1>
+              <h1 className="font-serif text-2xl font-semibold uppercase tracking-wide">{t("LISZT: RAPSZÓDIA")}</h1>
               <p className="text-sm text-muted-foreground">{t("Hleb / Pecivo / Pica")}</p>
             </div>
           </button>

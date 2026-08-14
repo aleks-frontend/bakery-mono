@@ -173,7 +173,7 @@ export function OrdersTable({
               )}
               {order.remark && (
                 <Tooltip
-                  trigger={<MessageSquare className="h-3.5 w-3.5 shrink-0 text-amber-600" aria-hidden />}
+                  trigger={<MessageSquare className="h-3.5 w-3.5 shrink-0 text-warning" aria-hidden />}
                   content={
                     <>
                       <span className="font-semibold">{t("Has a remark")}: </span>
@@ -327,7 +327,7 @@ export function OrdersTable({
   }, [onSelectionChange, rowSelection, table]);
 
   return (
-    <div className="rounded-md border bg-white">
+    <div className="rounded-md border bg-card">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (

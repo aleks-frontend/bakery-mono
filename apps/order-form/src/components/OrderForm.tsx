@@ -158,9 +158,11 @@ export function OrderForm({ articles, acceptingOrders }: OrderFormProps) {
 
   if (lastSubmitted) {
     return (
-      <div className="bg-bakery-card p-6 rounded-2xl max-w-[720px] mx-auto shadow-xl text-center">
-        <div className="text-4xl mb-3">✅</div>
-        <h2 className="text-xl font-bold mb-2">{t("Order received!")}</h2>
+      <div className="bg-bakery-card p-6 sm:p-8 rounded-2xl max-w-[720px] mx-auto shadow-bakery text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-bakery-secondary-soft text-bakery-secondary text-2xl">
+          ✓
+        </div>
+        <h2 className="font-serif text-2xl font-semibold mb-2 text-bakery-text">{t("Order received!")}</h2>
         <p className="text-bakery-text/80">
           {t("Thank you, {{recipient}} — we've got your order.", { recipient: lastSubmitted.recipient })}
         </p>
@@ -176,9 +178,9 @@ export function OrderForm({ articles, acceptingOrders }: OrderFormProps) {
               <span>{item.total} {t("RSD")}</span>
             </div>
           ))}
-          <div className="flex justify-between font-semibold pt-3 mt-2 border-t border-bakery-border">
-            <span>{t("Total:")}</span>
-            <span>{lastSubmitted.totalPrice} {t("RSD")}</span>
+          <div className="flex justify-between items-baseline pt-3 mt-2 border-t border-bakery-border">
+            <span className="font-medium">{t("Total:")}</span>
+            <span className="font-serif text-xl font-semibold">{lastSubmitted.totalPrice} {t("RSD")}</span>
           </div>
         </div>
         <button
@@ -198,7 +200,7 @@ export function OrderForm({ articles, acceptingOrders }: OrderFormProps) {
     <>
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="bg-bakery-card p-4 rounded-2xl max-w-[720px] mx-auto shadow-xl"
+        className="bg-bakery-card p-4 sm:p-6 rounded-2xl max-w-[720px] mx-auto shadow-bakery"
       >
         <CustomerFields
           register={register}
@@ -212,10 +214,10 @@ export function OrderForm({ articles, acceptingOrders }: OrderFormProps) {
           onUpdate={onItemsUpdate}
         />
 
-        <div className="mt-6 text-right text-xl font-semibold">
-          <span>{t("Total price:")}</span>
-          <span className="ml-2">{totalPrice}</span>
-          <span className="ml-1">{t("RSD")}</span>
+        <div className="mt-6 flex items-baseline justify-end gap-2 border-t border-bakery-border pt-4">
+          <span className="text-sm font-medium text-bakery-text/70">{t("Total price:")}</span>
+          <span className="font-serif text-2xl font-semibold text-bakery-text">{totalPrice}</span>
+          <span className="text-sm text-bakery-text/70">{t("RSD")}</span>
         </div>
 
         <label className="block mt-4 font-medium">
