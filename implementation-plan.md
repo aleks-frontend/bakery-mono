@@ -161,7 +161,10 @@ Verified live end-to-end against the real backend (no browser automation tool av
 
 Start with a simple command: `prepare this app for deployment to Railway`. This should produce Dockerfiles for `apps/backend`, `apps/admin-panel`, and `apps/order-form`, plus any small code adjustments needed (e.g. reading `PORT` from the environment).
 
-- [ ] Ask for the app to be prepared for Railway deployment (Dockerfiles + any entrypoint adjustments)
+- [x] Ask for the app to be prepared for Railway deployment (Dockerfiles + any entrypoint adjustments) — `apps/backend/Dockerfile`, `apps/admin-panel/Dockerfile`, `apps/order-form/Dockerfile` added (all built with the repo root as Docker context, since this is an npm workspaces monorepo — each Dockerfile copies every workspace's `package.json` first for `npm ci` lockfile parity, then only the source it actually needs). No entrypoint code changes were needed — `apps/backend/src/index.ts` already read `process.env.PORT` (falling back to 3001) from Phase 2. Root `.dockerignore` added (excludes `node_modules`, `dist`, `.env*`, `apps/backend/src/generated`).
+  - **Backend**: multi-stage build — installs all 5 workspaces' deps (`--ignore-scripts`, so `prisma generate` is triggered explicitly with a placeholder `DATABASE_URL` rather than relying on postinstall timing), builds `@bakery/schemas` then `@bakery/backend` (`tsc`), runtime stage copies just `node_modules` + the two `dist` folders + `package.json`s onto a bare `node:20-alpine`. Runs `node dist/index.js`, listens on `$PORT`.
+  - **Admin panel / order form**: same dependency layer, then build `@bakery/schemas` → `@bakery/api-client` → the app itself (`vite build`), served from `nginx:1.27-alpine` on a fixed port `8080` (`nginx.conf` in each app dir, with SPA `try_files` fallback for `admin-panel`'s `react-router-dom` routes). **Important divergence from a single-service Docker setup**: `VITE_BACKEND_URL` is a Vite env var, baked into the static JS bundle at *build* time, not read at container runtime — so on Railway it must be set as a **Build Variable** (`--build-arg` locally) on each frontend service, and needs the backend's real Railway domain to already be known, which means deploying the backend service first and rebuilding each frontend once its domain exists.
+  - **Deliberately three separate Dockerfiles/services, not one combined image** — this follows `tech-stack.md`'s explicit "Docker — a Dockerfile per app… Railway for hosting all three services" decision, unlike a prior project's single combined server+client container. Concretely this means repeating the Railway "add GitHub repo as a service" step three times (once per app directory, via each service's Root Directory / Dockerfile Path settings pointing at `apps/backend`, `apps/admin-panel`, `apps/order-form` respectively), not once.
 - [ ] Add a PostgreSQL database in Railway and link it to the backend service
 - [ ] Set required env vars (see the Railway section below for the exact list)
 - [ ] After the first deploy, seed the database
@@ -170,24 +173,27 @@ Start with a simple command: `prepare this app for deployment to Railway`. This 
 
 Before pushing anything to Railway, simulate it locally:
 
-- [ ] Check Docker is installed: `docker --version` — install it if missing
-- [ ] Ask to "build a docker image and run it locally" — this builds the same image Railway will build, so problems show up on your machine first, not in production
-- [ ] Confirm it actually serves the app on whatever local port it maps to
+- [x] Check Docker is installed: `docker --version` — install it if missing. Docker Desktop was already in `/Applications` but not running/on `PATH`; launched via `open -a Docker` and used from `/Applications/Docker.app/Contents/Resources/bin`.
+- [x] Ask to "build a docker image and run it locally" — this builds the same image Railway will build, so problems show up on your machine first, not in production. All three images built and run locally (backend on `:3002`, admin panel on `:8081`, order form on `:8082`, mapped from their containers' `3001`/`8080`/`8080`); the backend container was pointed at the host's native Postgres via `host.docker.internal` instead of `localhost` (the compose file's own Postgres service wasn't used for this test, since the point was to test the *image*, not the Postgres setup).
+  - **Real bug found and fixed**: the backend runtime stage copied only `apps/backend/dist` + a hand-picked `package.json` out of the build stage, on the assumption that `npm ci`'s root `node_modules` had every dependency hoisted there. It doesn't — `better-auth` got nested under `apps/backend/node_modules/better-auth` (and separately under `packages/api-client/node_modules/better-auth`) instead of hoisted to root, a real npm dedup outcome visible in `package-lock.json`'s `"apps/backend/node_modules/better-auth"` key, not a Docker-specific quirk. The container crashed on boot with `ERR_MODULE_NOT_FOUND: better-auth`. Fixed by copying each workspace directory wholesale from the build stage (`apps/backend`, `packages/schemas`) instead of cherry-picking `dist`/`package.json`, so any nested per-workspace `node_modules` comes along automatically regardless of how npm chose to hoist that install.
+- [x] Confirm it actually serves the app on whatever local port it maps to — verified: backend `/health` reports `database: connected` against the real seeded DB and `/api/public/articles` returns real article data; both frontend containers return `200` on `/` and on a deep client-side route (`/articles`, `/some/deep/route`), confirming nginx's SPA `try_files` fallback works; confirmed `VITE_BACKEND_URL` is actually baked into both frontends' built JS bundles.
 
 ### Deploying to Railway
 
 Go to railway.com (open in an incognito window if you hit a redirect problem):
 
 - [ ] Add a PostgreSQL database service
-- [ ] Connect the `bakery-mono` GitHub repo
+- [ ] Connect the `bakery-mono` GitHub repo **three times**, once per service — each pointed at a different Root Directory / Dockerfile Path (`apps/backend`, `apps/admin-panel`, `apps/order-form`), since this repo ships three separate Dockerfiles rather than one combined image (see the note in "Preparing for production" above)
+- [ ] Deploy the **backend** service first and give it a domain (see below) — the two frontend services need its real URL before their own first build
 - [ ] Go to the backend service's **Variables** tab and set (matching `apps/backend/.env`):
   - `DATABASE_URL` — from the Postgres service Railway just created
   - `BETTER_AUTH_SECRET` — generate with `openssl rand -base64 32`
   - `BETTER_AUTH_URL` — set once you know the Railway domain (see below)
   - Trusted origins for the admin panel and order form domains (needed since they're separate origins from the backend — see the CORS/cookie note in `CLAUDE.md`)
   - `RESEND_API_KEY` (or SMTP equivalent, per whichever email provider Phase 10 ended up using)
-- [ ] Click **Deploy**; if a service shows "Unexposed", click it, then **Generate Domain**, and set the port your app actually listens on (check the app's `PORT` env var / Dockerfile `EXPOSE`)
-- [ ] Once you have the real Railway domain, go back to Variables and update `BETTER_AUTH_URL` and the trusted-origins var with the actual `https://...` domain, then redeploy
+- [ ] On each of the **admin-panel** and **order-form** services, set `VITE_BACKEND_URL` as a **Build Variable** (not a plain runtime Variable) pointing at the backend's Railway domain — Vite bakes this into the static bundle at build time, so it must be set before that service's first (and any later) build, and changing it requires a rebuild, not just a redeploy
+- [ ] Click **Deploy** on each service; if a service shows "Unexposed", click it, then **Generate Domain**. Port to enter: `3001`-or-whatever-`PORT`-resolves-to for the backend (it already reads `process.env.PORT`), and `8080` for both frontend services (fixed in their `nginx.conf`/Dockerfile `EXPOSE`)
+- [ ] Once you have the real Railway domains for all three services, go back to the backend's Variables and update `BETTER_AUTH_URL` and the trusted-origins var with the actual `https://...` frontend domains, then redeploy
 
 ### Seeding production
 
@@ -291,3 +297,12 @@ Ask: give `Article` an optional category (e.g. "Bread", "Pastry", "Focaccia" —
 - [ ] Update `WorkshopListPdf.tsx`'s `summarizeWorkshopArticlesFromOrders()` — currently groups purely by parsed base name in first-seen order (see `parseArticleNameWeight`'s gram-suffix extraction); needs to sort/section by `Article.category` first, then by name within each category, so the printed workshop list reads as one block per category instead of an unordered flat list
 - [ ] Decide how to handle articles with no category set (opt-in field, so this will happen) — likely an "Uncategorized" section at the end rather than silently interleaving them with categorized ones
 - [ ] Decide whether category should also surface anywhere else (e.g. grouping the public order-form's article picker, or the admin Articles list) — out of scope for this pass unless the baker asks, but worth a deliberate call rather than assuming
+
+## Phase 23 — Show Remark in Order-Form Confirmation
+
+User-reported gap: `summary.remark` is collected on the order form (`OrderForm.tsx`'s "Remark (optional)" field) and correctly sent to the backend (`toCreateOrderInput` in `OrderSummaryModal.tsx` includes it), but it's never actually displayed back to the customer anywhere in the confirmation flow — missing from both:
+
+- [ ] `OrderSummaryModal.tsx` (the pre-submit "Confirm Order" modal) — shows customer info, location, items, total, and a repeat note, but no remark line
+- [ ] `OrderForm.tsx`'s post-submit success panel (the on-page confirmation added in Phase 13) — same gap, shows recipient/items/total/repeat note but not the remark
+
+A customer who added a remark (e.g. "no nuts please", a delivery instruction) currently has no way to confirm it was actually captured before or after submitting.
