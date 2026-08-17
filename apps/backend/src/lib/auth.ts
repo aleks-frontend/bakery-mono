@@ -22,4 +22,21 @@ export const auth = betterAuth({
     disableSignUp: true,
   },
   trustedOrigins,
+  // In production the admin panel and backend sit on different Railway
+  // hostnames (genuinely different sites, not just different ports on
+  // localhost), so the session cookie needs SameSite=None to survive a
+  // cross-site fetch. Scoped to production only: Secure cookies are never
+  // sent over the plain http://localhost dev servers, where the default
+  // SameSite=Lax already works fine since same-host-different-port counts
+  // as same-site.
+  advanced:
+    process.env.NODE_ENV === "production"
+      ? {
+          defaultCookieAttributes: {
+            sameSite: "none",
+            secure: true,
+            partitioned: true,
+          },
+        }
+      : undefined,
 });

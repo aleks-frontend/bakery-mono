@@ -182,27 +182,42 @@ Before pushing anything to Railway, simulate it locally:
 
 Go to railway.com (open in an incognito window if you hit a redirect problem):
 
-- [ ] Add a PostgreSQL database service
-- [ ] Connect the `bakery-mono` GitHub repo **three times**, once per service — each pointed at a different Root Directory / Dockerfile Path (`apps/backend`, `apps/admin-panel`, `apps/order-form`), since this repo ships three separate Dockerfiles rather than one combined image (see the note in "Preparing for production" above)
-- [ ] Deploy the **backend** service first and give it a domain (see below) — the two frontend services need its real URL before their own first build
+- [x] Add a PostgreSQL database service
+- [ ] Connect the `bakery-mono` GitHub repo **three times**, once per service (`bakery-mono-backend` done, `bakery-mono-order-form` done, `bakery-mono-admin-panel` still to do)
+  - **Real gotcha found, corrects the original plan above**: don't point each service's **Root Directory** at its app subdirectory (e.g. `/apps/backend`) — Railway's own docs say Root Directory scopes *which files even get pulled down* for the build, which becomes the Docker build context too. Our Dockerfiles need the repo root as context (they `COPY` sibling workspaces like `packages/schemas`), so a scoped Root Directory breaks the build. Instead: **leave Root Directory blank** (repo root) on every service, and set a `RAILWAY_DOCKERFILE_PATH` Variable instead, e.g. `RAILWAY_DOCKERFILE_PATH=/apps/backend/Dockerfile`. This is Railway's documented "shared monorepo" pattern.
+- [x] Deploy the **backend** service first and give it a domain — done, `bakery-mono-backend-production.up.railway.app`
 - [ ] Go to the backend service's **Variables** tab and set (matching `apps/backend/.env`):
-  - `DATABASE_URL` — from the Postgres service Railway just created
-  - `BETTER_AUTH_SECRET` — generate with `openssl rand -base64 32`
-  - `BETTER_AUTH_URL` — set once you know the Railway domain (see below)
-  - Trusted origins for the admin panel and order form domains (needed since they're separate origins from the backend — see the CORS/cookie note in `CLAUDE.md`)
-  - `RESEND_API_KEY` (or SMTP equivalent, per whichever email provider Phase 10 ended up using)
-- [ ] On each of the **admin-panel** and **order-form** services, set `VITE_BACKEND_URL` as a **Build Variable** (not a plain runtime Variable) pointing at the backend's Railway domain — Vite bakes this into the static bundle at build time, so it must be set before that service's first (and any later) build, and changing it requires a rebuild, not just a redeploy
-- [ ] Click **Deploy** on each service; if a service shows "Unexposed", click it, then **Generate Domain**. Port to enter: `3001`-or-whatever-`PORT`-resolves-to for the backend (it already reads `process.env.PORT`), and `8080` for both frontend services (fixed in their `nginx.conf`/Dockerfile `EXPOSE`)
-- [ ] Once you have the real Railway domains for all three services, go back to the backend's Variables and update `BETTER_AUTH_URL` and the trusted-origins var with the actual `https://...` frontend domains, then redeploy
+  - [x] `DATABASE_URL` → `${{Postgres.DATABASE_URL}}` (Railway's live variable-reference syntax, not a copy-pasted connection string) — Railway will warn that this references a "public endpoint" if you reference a service's `RAILWAY_PUBLIC_DOMAIN` elsewhere; that warning doesn't apply to browser-consumed values like `VITE_BACKEND_URL` (see below), only to server-to-server calls that could use `RAILWAY_PRIVATE_DOMAIN` instead
+  - [ ] `BETTER_AUTH_SECRET` — generate with `openssl rand -base64 32`
+  - [x] `BETTER_AUTH_URL` → `https://bakery-mono-backend-production.up.railway.app`, set once the domain existed (confirmed needed: without it, Better Auth logs a "Base URL is not set" warning on boot)
+  - [x] `TRUSTED_ORIGINS` — **not created by default**, had to be added explicitly (an absent var silently falls back to `apps/backend/src/lib/auth.ts`'s local-dev-only default, which is what caused a real CORS failure against the deployed order form). Value: `http://localhost:5173,http://localhost:5174,https://bakery-mono-order-form-production.up.railway.app` — append the admin-panel domain too once that service exists
+  - [ ] `RESEND_API_KEY` / `EMAIL_FROM` / `ADMIN_NOTIFICATION_EMAIL` (or SMTP equivalent, per whichever email provider Phase 10 ended up using)
+  - [ ] `ADMIN_EMAIL` / `ADMIN_PASSWORD` (needed for the seed script, see "Seeding production" below)
+- [x] On each of the **admin-panel** and **order-form** services, set `VITE_BACKEND_URL` pointing at the backend's Railway domain — **correction to the original plan**: this isn't a distinct "Build Variable" toggle, it's a normal Variable that Railway exposes to the Dockerfile's `ARG VITE_BACKEND_URL` automatically (already declared in the right build stage in both Dockerfiles) — no special dashboard setting needed beyond setting the variable itself. Value used: `https://${{bakery-mono-backend.RAILWAY_PUBLIC_DOMAIN}}` (references the backend service's own domain rather than hardcoding it).
+  - **Real bug found**: the reference syntax is unforgiving — an accidental stray `=` and a single `}` instead of `}}` (typo'd as `=https://${{bakery-mono-backend.RAILWAY_PUBLIC_DOMAIN}`) meant Railway didn't recognize it as a reference at all and baked the literal broken string into the built JS bundle, which the browser then resolved as a relative path against its own origin (`.../=https://${{...}` — visibly wrong in the Network tab). Since this is baked in at build time, fixing the value requires a fresh deploy, not just a restart.
+- [ ] Click **Deploy** on each service; if a service shows "Unexposed", click it, then **Generate Domain**. Port to enter: `3001`-or-whatever-`PORT`-resolves-to for the backend (it already reads `process.env.PORT`), and `8080` for both frontend services (fixed in their `nginx.conf`/Dockerfile `EXPOSE`) — done for backend and order-form, admin-panel still to do
+- [ ] Once you have the real Railway domains for all three services, go back to the backend's Variables and confirm `BETTER_AUTH_URL` and `TRUSTED_ORIGINS` include all of them, then redeploy
 
-### Seeding production
+### Running migrations + seeding production
 
-- [ ] Install the Railway CLI: `brew install railway` (see https://docs.railway.com/cli for other platforms)
-- [ ] `railway login`
-- [ ] `railway link` — select the project, then the **backend** service (not Postgres)
-- [ ] Run the seed command from the repo root, e.g. `railway run -- npm run prisma:seed -w @bakery/backend`
-- [ ] If you hit a `DatabaseNotReachable`-style error: temporarily switch the backend's `DATABASE_URL` to Postgres's *public* connection string in Railway's Variables tab, redeploy, run the seed command again, then switch `DATABASE_URL` back to the private one and redeploy
+The original version of this section jumped straight to seeding — a real gap, since the seed script only inserts rows, it doesn't create tables. First deploy hit exactly this: `/api/public/articles` 500'd with Prisma's `PrismaClientKnownRequestError: The table 'public.cycles' does not exist in the current database` — the production Postgres had never had a migration applied to it. All commands below run **from the repo root** (matching this repo's `npm` workspaces convention — `railway link` needs to associate that directory, and `npm exec --workspace @bakery/backend` only resolves from root).
 
+- [x] Install the Railway CLI: `brew install railway` (see https://docs.railway.com/cli for other platforms)
+- [x] `railway login`
+- [x] `railway link` — select the project, then the **backend** service (not Postgres)
+- [x] **Run migrations first** (this step was missing before): `railway run -- npm exec --workspace @bakery/backend -- prisma migrate deploy`
+- [x] Then seed: `railway run -- npm run prisma:seed -w @bakery/backend`
+- [x] Hit the `DatabaseNotReachable`-style error as expected: `${{Postgres.DATABASE_URL}}` is Railway's private network address, unreachable from `railway run` executing on a local machine. Worked around it by temporarily switching the backend's `DATABASE_URL` to `${{Postgres.DATABASE_PUBLIC_URL}}`, redeploying, re-running both commands, then switching back to `${{Postgres.DATABASE_URL}}` and redeploying.
+  - **Real snag underneath that**: `${{Postgres.DATABASE_PUBLIC_URL}}` initially resolved to an *empty string* (not a connection error) — this Postgres instance had never had public networking enabled, so the variable didn't exist yet at all. Fixed via the Postgres service's own Settings → Networking → **Add Public Access**, which is what actually creates `DATABASE_PUBLIC_URL`. `railway variables` (lists every variable Railway resolves for whatever service is linked locally) was the useful diagnostic here — showed `DATABASE_URL` was empty before this fix, confirming it wasn't a `railway link`/wrong-service issue.
+  - Railway also offers `railway connect <service>` (an encrypted tunnel with no public exposure needed) as a nicer alternative to enabling public access — not used this time since it's documented only as an interactive database shell, not confirmed to work as a general local-`DATABASE_URL` tunnel for tools like Prisma. Worth revisiting if this comes up again.
+- [x] Verified live end-to-end: `https://bakery-mono-order-form-production.up.railway.app/` loads real article data through the deployed backend.
+
+### Admin panel deploy
+
+- [x] Deployed `bakery-mono-admin-panel` the same way as order-form (Root Directory blank, `RAILWAY_DOCKERFILE_PATH=/apps/admin-panel/Dockerfile`, `VITE_BACKEND_URL` referencing the backend's domain, domain generated on port `8080`)
+- [x] Hit two more `TRUSTED_ORIGINS` typos on the same variable from before: a missing `https://` scheme and a stray leading space on the newly-appended admin-panel entry — fixed (the leading space turned out to be harmless either way, since `auth.ts`'s `trustedOrigins` already does `.split(",").map(origin => origin.trim())`, but the missing scheme was a real blocker)
+- [x] **Real, non-typo bug found**: login succeeded (`POST /api/auth/sign-in/email` returned a valid token+user), but the follow-up `GET /api/auth/get-session` came back `null` and the admin panel never redirected past the login page. Root cause: admin-panel and backend are on genuinely different hostnames in production (`*.up.railway.app` is on the public suffix list, so each Railway app is its own "site"), which requires the session cookie to be `SameSite=None; Secure` to survive a cross-site `fetch`. Better Auth defaults to `SameSite=Lax`, which is why this was invisible in local dev — `localhost:5173` and `localhost:3001` differ only by port, which browsers treat as *same-site*, so `Lax` already worked there. Fixed in `apps/backend/src/lib/auth.ts` via `advanced.defaultCookieAttributes: { sameSite: "none", secure: true, partitioned: true }`, gated to `NODE_ENV === "production"` only so local dev's already-working behavior is untouched.
+- [ ] Push this fix and confirm login + redirect works on the deployed admin panel
 ### Cutover
 
 - [ ] Run test/fake orders through both the admin panel and order form on the deployed staging app for a trial period
