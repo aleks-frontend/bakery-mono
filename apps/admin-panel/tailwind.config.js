@@ -17,6 +17,12 @@ export default {
       },
     },
     extend: {
+      screens: {
+        // Named after where the admin panel's Header actually starts
+        // breaking, not the default Tailwind scale - see Header.tsx.
+        "nav-md": "900px",
+        "nav-lg": "1100px",
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

@@ -231,11 +231,13 @@ The original version of this section jumped straight to seeding — a real gap, 
 
 Admin panel's `Header.tsx` currently renders `Dashboard`/`Orders`/`Articles`/`Cycles`/`Repeating Orders` as a plain horizontal `NavLink` row with no responsive handling — fine on desktop, but crowds or overflows on narrow/mobile viewports.
 
-- [ ] Below a `sm`/`md` breakpoint, collapse the horizontal nav into a hamburger icon button
-- [ ] Hamburger opens a dropdown or slide-in menu with the same links (reuse the existing `DropdownMenu` primitive in `components/ui/dropdown-menu.tsx`, or add a `Sheet` if a slide-in panel reads better — either is a small addition on top of existing shadcn/ui conventions)
-- [ ] Preserve active-route highlighting inside the collapsed menu, matching the current desktop nav's styling convention
-- [ ] Confirm `BackendHealthBadge`, `LanguageSelector`, and the sign-out button all remain reachable and usable at narrow widths too, not just the nav links
-- [ ] Manually verify at common breakpoints (mobile portrait, tablet) — no visual-regression tooling exists yet (see Phase 16)
+Prompted by a real user report: below ~1100px the header actually broke (nav overlapping the logo, "Log out" pushed off-screen requiring horizontal scroll), not just "crowded."
+
+- [x] Below a threshold, collapse the horizontal nav into a hamburger icon button — used two custom breakpoints instead of the default `sm`/`md` scale, named for where the header actually breaks rather than Tailwind's generic sizes: `nav-md: 900px` / `nav-lg: 1100px` in `apps/admin-panel/tailwind.config.js`. Three tiers: ≥1100px unchanged (everything inline); 900–1099px keeps nav links inline (primary, used most) but drops the utility cluster (backend pill/flags/username/logout — secondary) to its own row; <900px collapses both into the hamburger.
+- [x] Hamburger opens a dropdown with the same links — used the existing `DropdownMenu` primitive (no `Sheet` needed, a flat 5-link list didn't need a slide-in panel)
+- [x] Preserve active-route highlighting inside the collapsed menu — same `isActive`-driven class logic as the desktop nav, via a shared `renderNavItems(isDropdown)` helper (added on user request to avoid the initial version's 3x-duplicated `NAV_ITEMS.map(...)` across the full/middle/dropdown tiers)
+- [x] Confirm `BackendHealthBadge`, `LanguageSelector`, and the sign-out button all remain reachable and usable at narrow widths too — all three included in the hamburger's dropdown content
+- [ ] Manually verify at common breakpoints (mobile portrait, tablet) — implemented and typecheck/lint-clean, but not yet visually confirmed in a real browser this session (the browser automation tool couldn't reach `localhost` in this environment); needs a manual pass across ~1400px → 1100px → 950px → 700px
 
 ## Phase 16 — Test Coverage (Unit + End-to-End)
 
