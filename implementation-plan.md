@@ -322,4 +322,14 @@ User-reported gap: `summary.remark` is collected on the order form (`OrderForm.t
 - [ ] `OrderSummaryModal.tsx` (the pre-submit "Confirm Order" modal) — shows customer info, location, items, total, and a repeat note, but no remark line
 - [ ] `OrderForm.tsx`'s post-submit success panel (the on-page confirmation added in Phase 13) — same gap, shows recipient/items/total/repeat note but not the remark
 
+## Phase 24 — Sentry.io Error Tracking
+
+Reminder only — not yet scoped in detail, revisit when this phase starts. Nothing today surfaces unhandled errors from any of the three apps beyond console logs and Railway's own deploy logs — no error-monitoring/alerting layer exists yet.
+
+- [ ] Add Sentry to all three apps: `apps/backend` (Express error-handling middleware, plus the existing fire-and-forget paths like `sendOrderNotifications()` that already swallow errors via their own `console.error` calls — decide whether those should also report to Sentry or stay local-log-only), `apps/admin-panel` and `apps/order-form` (React SDK, initialized in `main.tsx`)
+- [ ] New env vars per app (`SENTRY_DSN` or equivalent) — add to each `.env.example` and to the matching Railway service's Variables tab; note the two frontends bake env vars in at build time (same `VITE_`-prefixed / build-arg gotcha as `VITE_BACKEND_URL`), so this needs to flow through their Dockerfiles' `ARG`/`ENV` the same way
+- [ ] Decide on environment tagging (`production` vs local dev) so noise from `npm run dev:*` doesn't mix with real production errors — likely gate initialization on `NODE_ENV`/`import.meta.env.MODE`, mirroring the pattern already used in `apps/backend/src/lib/auth.ts` for the cross-site cookie fix
+- [ ] Decide whether to enable source map upload (readable stack traces for the minified frontend builds) — needs a Sentry auth token wired into each frontend's Dockerfile build stage if so
+- [ ] Decide on sampling rate / whether session replay or performance monitoring are wanted, or just plain error capture
+
 A customer who added a remark (e.g. "no nuts please", a delivery instruction) currently has no way to confirm it was actually captured before or after submitting.
