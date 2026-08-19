@@ -20,6 +20,8 @@ export interface OrdersListParams {
   sortDir?: "asc" | "desc";
   page?: number;
   pageSize?: OrderPageSize;
+  /** Bypasses page/pageSize and returns every order matching the other filters. */
+  all?: boolean;
 }
 
 export interface OrdersClient {
@@ -45,6 +47,7 @@ function buildQuery(params?: OrdersListParams): string {
   if (params.sortDir) qs.set("sortDir", params.sortDir);
   if (params.page) qs.set("page", String(params.page));
   if (params.pageSize) qs.set("pageSize", String(params.pageSize));
+  if (params.all) qs.set("all", String(params.all));
   const s = qs.toString();
   return s ? `?${s}` : "";
 }

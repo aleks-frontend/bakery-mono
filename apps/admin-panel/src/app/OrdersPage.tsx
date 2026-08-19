@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import type { RowSelectionState } from "@tanstack/react-table"
 import { useTranslation } from "react-i18next"
 import { useOrdersQuery } from "@/hooks/useOrdersQuery"
 import { useBulkUpdateOrderStatusMutation } from "@/hooks/useUpdateOrderMutation"
@@ -13,6 +14,7 @@ import { OrderFormModal } from "@/components/OrderFormModal"
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal"
 import { ArchiveConfirmModal } from "@/components/ArchiveConfirmModal"
 import { BulkPanel } from "@/components/BulkPanel"
+import { ordersClient } from "@/lib/apiClient"
 import { ORDER_PAGE_SIZES } from "@bakery/api-client"
 import type { Order, OrderPageSize, OrderStatus, OrdersListParams } from "@bakery/api-client"
 import { Input } from "@/components/ui/input"
@@ -68,12 +70,67 @@ export function OrdersPage() {
   const total = response?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
+  // Selection is keyed by order id and controlled here (not owned by
+  // OrdersTable) so it can span every order matching the current filters,
+  // not just whatever page happens to be rendered — see handleSelectAllToggle.
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+  // Running cache of every order object seen so far, keyed by id. Selection
+  // via "select all matching" can include orders that were never rendered on
+  // the current page, so bulk actions/PDF generation need somewhere else to
+  // resolve full Order data (recipient, items, etc.) from a selected id.
+  const [orderCache, setOrderCache] = useState<Map<string, Order>>(new Map())
+  const [isSelectingAll, setIsSelectingAll] = useState(false)
+
+  useEffect(() => {
+    if (!response || response.data.length === 0) return
+    setOrderCache((prev) => {
+      const next = new Map(prev)
+      for (const order of response.data) next.set(order.id, order)
+      return next
+    })
+  }, [response])
+
   // Any change to what's being asked for (filters, sort, page size) invalidates
   // the current page number — jumping back to page 1 avoids landing on a now
-  // out-of-range page (e.g. page 5 of a search that only has 2 results).
+  // out-of-range page (e.g. page 5 of a search that only has 2 results) — and
+  // the current selection, since it was scoped to the previous filter set.
   useEffect(() => {
     setPage(1)
+    setRowSelection({})
   }, [searchQuery, statusFilter, sortBy, sortDir, showArchived, hasRemarkFilter, pageSize])
+
+  const selectedIds = useMemo(
+    () => Object.keys(rowSelection).filter((id) => rowSelection[id]),
+    [rowSelection],
+  )
+  const selectedOrders = useMemo(
+    () => selectedIds.map((id) => orderCache.get(id)).filter((o): o is Order => o != null),
+    [selectedIds, orderCache],
+  )
+  const allSelected = selectedIds.length > 0 && selectedIds.length === total
+  const someSelected = selectedIds.length > 0 && !allSelected
+
+  async function handleSelectAllToggle(checked: boolean) {
+    if (!checked) {
+      setRowSelection({})
+      return
+    }
+    setIsSelectingAll(true)
+    try {
+      const { data } = await ordersClient.list({ ...queryParams, page: undefined, pageSize: undefined, all: true })
+      setOrderCache((prev) => {
+        const next = new Map(prev)
+        for (const order of data) next.set(order.id, order)
+        return next
+      })
+      setRowSelection(Object.fromEntries(data.map((order) => [order.id, true])))
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsSelectingAll(false)
+    }
+  }
+
   const bulkStatusMutation = useBulkUpdateOrderStatusMutation()
   const deleteOrdersMutation = useDeleteOrderMutation()
   const archiveOrdersMutation = useArchiveOrderMutation()
@@ -86,7 +143,6 @@ export function OrdersPage() {
   // changes made while the details modal is open are reflected immediately,
   // instead of requiring a close+reopen to pick up the refetched data.
   const selectedOrder = selectedOrderId ? (orders.find((o) => o.id === selectedOrderId) ?? null) : null
-  const [selectedOrders, setSelectedOrders] = useState<Order[]>([])
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
   const [isManualOrderModalOpen, setIsManualOrderModalOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
@@ -116,7 +172,10 @@ export function OrdersPage() {
 
   const handleBulkStatusChange = (status: OrderStatus) => {
     setBulkStatus(status)
-    bulkStatusMutation.mutate({ ids: selectedOrders.map((o) => o.id), status })
+    bulkStatusMutation.mutate(
+      { ids: selectedOrders.map((o) => o.id), status },
+      { onSuccess: () => setRowSelection({}) },
+    )
   }
 
   const handleDeleteOrder = (order: Order) => {
@@ -157,7 +216,7 @@ export function OrdersPage() {
   const handleBulkToggleArchive = () => {
     const ids = selectedOrders.map((o) => o.id)
     if (showArchived) {
-      unarchiveOrdersMutation.mutate(ids)
+      unarchiveOrdersMutation.mutate(ids, { onSuccess: () => setRowSelection({}) })
     } else {
       setOrderIdsToArchive(ids)
       setArchiveConfirmOpen(true)
@@ -333,12 +392,7 @@ export function OrdersPage() {
             </Select>
           </div>
         </div>
-        {/* Keyed by the query so any filter/sort/page change remounts the table
-            with a clean selection — otherwise checked rows from a previous page
-            or filter linger in its internal (id-keyed) selection state even
-            though they're no longer visible. */}
         <OrdersTable
-          key={JSON.stringify(queryParams)}
           orders={orders}
           sortBy={sortBy}
           sortDir={sortDir}
@@ -347,7 +401,12 @@ export function OrdersPage() {
           onDeleteOrder={handleDeleteOrder}
           onToggleArchive={handleToggleArchive}
           onMakeRepeating={handleMakeRepeating}
-          onSelectionChange={setSelectedOrders}
+          rowSelection={rowSelection}
+          onRowSelectionChange={setRowSelection}
+          allSelected={allSelected}
+          someSelected={someSelected}
+          isSelectingAll={isSelectingAll}
+          onSelectAllToggle={handleSelectAllToggle}
         />
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
@@ -446,7 +505,10 @@ export function OrdersPage() {
         entitySingular={t("order")}
         entityPlural={t("orders")}
         onDelete={(ids) => deleteOrdersMutation.mutateAsync(ids).then(() => {})}
-        onSuccess={() => setIsDetailsModalOpen(false)}
+        onSuccess={() => {
+          setIsDetailsModalOpen(false)
+          setRowSelection({})
+        }}
       />
 
       <ArchiveConfirmModal
@@ -456,7 +518,10 @@ export function OrdersPage() {
         entitySingular={t("order")}
         entityPlural={t("orders")}
         onArchive={(ids) => archiveOrdersMutation.mutateAsync(ids).then(() => {})}
-        onSuccess={() => setIsDetailsModalOpen(false)}
+        onSuccess={() => {
+          setIsDetailsModalOpen(false)
+          setRowSelection({})
+        }}
       />
 
       <DeleteConfirmModal

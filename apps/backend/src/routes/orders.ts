@@ -22,7 +22,7 @@ ordersRouter.get("/", async (req, res) => {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
-  const { status, cycleId, archived, hasRemark, search, sortBy, sortDir, page, pageSize } = parsed.data;
+  const { status, cycleId, archived, hasRemark, search, sortBy, sortDir, page, pageSize, all } = parsed.data;
 
   const where: PrismaTypes.OrderWhereInput = {
     archived,
@@ -46,8 +46,7 @@ ordersRouter.get("/", async (req, res) => {
       where,
       orderBy: { [sortBy]: sortDir },
       include: orderInclude,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      ...(all ? {} : { skip: (page - 1) * pageSize, take: pageSize }),
     }),
     prisma.order.count({ where }),
   ]);

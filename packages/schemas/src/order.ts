@@ -101,6 +101,13 @@ export const orderListQuerySchema = z.object({
       message: `pageSize must be one of ${ORDER_PAGE_SIZES.join(", ")}`,
     })
     .default(25),
+  // Bypasses page/pageSize entirely and returns every order matching the
+  // other filters — used by "select all" to select everything matching the
+  // current filters, not just the current page.
+  all: z
+    .string()
+    .optional()
+    .transform((v) => v === "true"),
 });
 export type OrderListQuery = z.infer<typeof orderListQuerySchema>;
 

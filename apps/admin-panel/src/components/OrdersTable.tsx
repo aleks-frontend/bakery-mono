@@ -4,6 +4,7 @@ import {
   flexRender,
   type ColumnDef,
   type RowSelectionState,
+  type Updater,
 } from "@tanstack/react-table";
 import {
   Table,
@@ -17,7 +18,16 @@ import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { StatusDropdown } from "./StatusDropdown";
 import type { Order, OrderStatus, OrdersListParams } from "@bakery/api-client";
-import { Archive, ArchiveRestore, ArrowUpDown, Eye, MessageSquare, Repeat, Trash2 } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  ArrowUpDown,
+  Eye,
+  Loader2,
+  MessageSquare,
+  Repeat,
+  Trash2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -34,17 +44,28 @@ interface OrdersTableProps {
   onDeleteOrder: (order: Order) => void;
   onToggleArchive: (order: Order) => void;
   onMakeRepeating: (order: Order) => void;
-  onSelectionChange?: (selectedOrders: Order[]) => void;
+  /** Selection is controlled by the parent (keyed by order id) so it can span
+   * every page matching the current filters, not just the currently-rendered
+   * page — see the "select all" header checkbox below. */
+  rowSelection: RowSelectionState;
+  onRowSelectionChange: (updater: Updater<RowSelectionState>) => void;
+  /** Whether every order matching the current filters (not just this page) is selected. */
+  allSelected: boolean;
+  someSelected: boolean;
+  isSelectingAll?: boolean;
+  onSelectAllToggle: (checked: boolean) => void;
 }
 
 function SelectCheckbox({
   checked,
   indeterminate = false,
+  disabled = false,
   onChange,
   ariaLabel,
 }: {
   checked: boolean;
   indeterminate?: boolean;
+  disabled?: boolean;
   onChange: (checked: boolean) => void;
   ariaLabel: string;
 }) {
@@ -60,9 +81,10 @@ function SelectCheckbox({
       ref={ref}
       type="checkbox"
       checked={checked}
+      disabled={disabled}
       onChange={(e) => onChange(e.target.checked)}
       aria-label={ariaLabel}
-      className="h-4 w-4 rounded border-border accent-primary"
+      className="h-4 w-4 rounded border-border accent-primary disabled:opacity-50"
     />
   );
 }
@@ -104,10 +126,14 @@ export function OrdersTable({
   onDeleteOrder,
   onToggleArchive,
   onMakeRepeating,
-  onSelectionChange,
+  rowSelection,
+  onRowSelectionChange,
+  allSelected,
+  someSelected,
+  isSelectingAll,
+  onSelectAllToggle,
 }: OrdersTableProps) {
   const { t } = useTranslation();
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const { mutate: updateOrder } = useUpdateOrderMutation();
 
@@ -124,12 +150,16 @@ export function OrdersTable({
       {
         id: "select",
         enableSorting: false,
-        header: ({ table }) => (
-          <div className="flex items-center justify-center">
+        header: () => (
+          <div className="flex items-center justify-center gap-1">
+            {isSelectingAll && (
+              <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" aria-hidden />
+            )}
             <SelectCheckbox
-              checked={table.getIsAllRowsSelected()}
-              indeterminate={table.getIsSomeRowsSelected()}
-              onChange={(checked) => table.toggleAllRowsSelected(checked)}
+              checked={allSelected}
+              indeterminate={someSelected}
+              disabled={isSelectingAll}
+              onChange={onSelectAllToggle}
               ariaLabel={t("Select all")}
             />
           </div>
@@ -307,6 +337,10 @@ export function OrdersTable({
       onMakeRepeating,
       handleStatusChange,
       updatingOrderId,
+      allSelected,
+      someSelected,
+      isSelectingAll,
+      onSelectAllToggle,
     ]
   );
 
@@ -314,17 +348,11 @@ export function OrdersTable({
     data: orders,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    onRowSelectionChange: setRowSelection,
+    onRowSelectionChange,
     getRowId: (row) => row.id,
     enableRowSelection: true,
     state: { rowSelection },
   });
-
-  useEffect(() => {
-    if (!onSelectionChange) return;
-    const selectedOrders = table.getSelectedRowModel().rows.map((row) => row.original);
-    onSelectionChange(selectedOrders);
-  }, [onSelectionChange, rowSelection, table]);
 
   return (
     <div className="rounded-md border bg-card">
