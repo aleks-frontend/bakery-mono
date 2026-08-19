@@ -21,7 +21,7 @@ Copy `.env.example` to `.env` and fill in all variables:
 VITE_BACKEND_URL=                     # Real backend (health check, Better Auth, Articles/Orders API), default http://localhost:3001
 ```
 
-As of Phase 9's Orders chunk, the admin panel is fully cut over to the real backend — no n8n webhooks or env vars remain. (The public order form, `apps/order-form`, is a separate app and still goes through n8n until Phase 13.)
+As of Phase 9's Orders chunk, the admin panel is fully cut over to the real backend — no n8n webhooks or env vars remain. (The public order form, `apps/order-form`, is a separate app; it made the same cutover in Phase 13 and also has no n8n dependency left.)
 
 ## Architecture
 

@@ -48,15 +48,15 @@ npm run <script> -w @bakery/<name> # run a script in one workspace directly,
 
 | Path | What | Status |
 |---|---|---|
-| `apps/admin-panel` | React 18 + Vite admin SPA (`@bakery/admin-panel`) | Fresh-copied from the standalone `bakery-admin-panel` repo; still reads/writes via the old n8n webhook URLs (see its own `apps/admin-panel/CLAUDE.md`) |
-| `apps/order-form` | React 18 + Vite public order form (`@bakery/order-form`) | Fresh-copied from the standalone `bakery-order-form` repo; same n8n dependency for now |
-| `apps/backend` | Express 5 + TypeScript API (`@bakery/backend`), ESM, run via `tsx` | CORS + JSON middleware, `/health` checks live DB connectivity. Full domain schema migrated (`Article`, `Cycle`, `Order`, `OrderItem`, `RepeatingOrder`, `RepeatingOrderItem`) plus Better Auth's core tables. No API routes or real auth wiring yet — `src/lib/auth.ts` only exists so far to drive the Better Auth schema generator |
-| `packages/schemas` | Shared Zod schemas (`@bakery/schemas`) | Placeholder only — will hold `Order`/`Article`/`Cycle`/`RepeatingOrder` schemas once modeled, consumed by all three apps |
-| `packages/api-client` | Shared TanStack Query hooks/mutations (`@bakery/api-client`) | Placeholder only — will replace each frontend's hand-rolled n8n fetch hooks once the backend has real endpoints |
+| `apps/admin-panel` | React 18 + Vite admin SPA (`@bakery/admin-panel`) | Fully cut over to the real backend (see its own `apps/admin-panel/CLAUDE.md`) |
+| `apps/order-form` | React 18 + Vite public order form (`@bakery/order-form`) | Fully cut over to the real backend as of Phase 13 — `POST /api/public/orders` / `GET /api/public/articles`, no n8n involved |
+| `apps/backend` | Express 5 + TypeScript API (`@bakery/backend`), ESM, run via `tsx` | Full domain schema (`Article`, `Cycle`, `Order`, `OrderItem`, `RepeatingOrder`, `RepeatingOrderItem`), Better Auth wired, authenticated `/api/*` routes for the admin panel plus unauthenticated `/api/public/*` routes for the order form |
+| `packages/schemas` | Shared Zod schemas (`@bakery/schemas`) | Holds `Order`/`Article`/`Cycle`/`RepeatingOrder` schemas, consumed by all three apps |
+| `packages/api-client` | Shared TanStack Query hooks/mutations (`@bakery/api-client`) | Used by all three apps — `createArticlesClient`/`createOrdersClient`/`createCyclesClient`/`createRepeatingOrdersClient` (admin panel, authenticated) and `createPublicClient` (order form, unauthenticated) |
 
 The two frontends are deliberately kept as **separate apps**, not merged — different audiences (public order form vs. internal admin tool), different bundle-size/perf needs, and a cleaner auth boundary. They share code through the two `packages/*` workspaces instead.
 
-**Migration path**: both frontends still talk to n8n webhooks directly (their existing `.env`/`src/services`/`src/lib/api.ts` fetch logic, untouched). The backend is being built out first (DB schema → auth → core API), then the admin panel gets rewired onto it, and the public order form last — see `implementation-plan.md` for the phase-by-phase order and why.
+**Migration path (historical)**: n8n is fully retired as of Phase 13 — both frontends talk to the real backend exclusively (admin panel via authenticated `/api/*` routes, order form via unauthenticated `/api/public/*` routes). The build order was backend first (DB schema → auth → core API), then the admin panel, then the public order form — see `implementation-plan.md` for the phase-by-phase history and why.
 
 **Domain model** (fully specified in `project-scope.md`, summarized here): a bakery operates in weekly `Cycle`s (opens Saturday, closes Monday, delivers Wednesday, manually admin-controlled, no cron). `Article` (renamed from the old "BreadType") has an optional `capacityPerCycle` computed live against the current cycle's order totals. `RepeatingOrder` represents standing weekly orders that get cloned into a new `Order` every time a cycle starts, subject to the same capacity limits as any other order — no special-casing.
 
