@@ -1,8 +1,33 @@
 import "dotenv/config";
+import { randomUUID } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client.js";
+import type { CycleStatus, OrderStatus } from "../src/generated/prisma/enums.js";
 import { auth } from "../src/lib/auth.js";
-import { isoWeekLabel } from "../src/lib/cycleDates.js";
+import { suggestCycleStart } from "../src/lib/cycleDates.js";
+import { articles } from "./articles-catalog.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+interface RealOrdersData {
+  cycles: { key: string; label: string; deliveryDate: string; status: CycleStatus }[];
+  orders: {
+    cycleKey: string;
+    recipient: string;
+    phone: string;
+    email: string | null;
+    location: string;
+    totalPrice: number;
+    status: OrderStatus;
+    remark: string | null;
+    archived: boolean;
+    createdAt: string;
+    items: { articleId: string; quantity: number; unitPrice: number }[];
+  }[];
+}
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -38,161 +63,63 @@ async function seedAdminAccount() {
   console.log(`Seeded admin account for ${email}.`);
 }
 
-const articles: { id: string; name: string; price: number; available: boolean }[] = [
-  { id: "beli_hleb_500g", name: "Beli hleb - Fehér kenyér - 500g", price: 200, available: true },
-  { id: "beli_hleb_1000g", name: "Beli hleb - Fehér kenyér - 1000g", price: 400, available: true },
-  { id: "beli_hleb_1500g", name: "Beli hleb - Fehér kenyér - 1500g", price: 600, available: true },
-  { id: "seljacki_hleb_500g", name: "Seljački hleb - Paraszt kenyét - 500g", price: 200, available: true },
-  { id: "seljacki_hleb_1000g", name: "Seljački hleb - Paraszt kenyét -1000g", price: 400, available: true },
-  { id: "seljacki_hleb_1500g", name: "Seljački hleb - Paraszt kenyét -1500g", price: 600, available: true },
-  { id: "razani_hleb", name: "Hleb sa ražanim brašnom - Rozsos kenyér - 1000g", price: 400, available: true },
-  {
-    id: "integralni_razani_hleb",
-    name: "Integralni hleb od ražanog brašna - TK rozskenyét - 800g",
-    price: 350,
-    available: true,
-  },
-  { id: "crni_hleb_500g", name: "Crni hleb - Bánkúti fekete kenyér - 500g", price: 230, available: true },
-  { id: "crni_hleb_1000g", name: "Crni hleb - Bánkúti fekete kenyér - 1000g", price: 450, available: true },
-  { id: "hrono_hleb", name: "Hrono hleb - Chrono kenyér - 800g", price: 350, available: true },
-  { id: "spelta_hleb_500g", name: "Hleb od spelte - Tönköly kenyér - 500g", price: 230, available: true },
-  { id: "spelta_hleb_1000g", name: "Hleb od spelte - Tönköly kenyér - 1000g", price: 450, available: true },
-  {
-    id: "hleb_sa_semenkama",
-    name: "Hleb sa više vrsta semenki - Sokmagvas kenyér - 800g",
-    price: 370,
-    available: true,
-  },
-  { id: "hleb_sa_lanom_500g", name: "Hleb sa lanom - Lenmagos kenyér - 500g", price: 200, available: true },
-  { id: "hleb_sa_lanom_1000g", name: "Hleb sa lanom - Lenmagos kenyér - 1000g", price: 400, available: true },
-  { id: "sendvic_hleb", name: "Hleb za sendviče - Szendvics kenyér - 800g", price: 370, available: true },
-  {
-    id: "100%_einkorn_hleb",
-    name: "Hleb od jednozrnke 100% - 100% alakor kenyér 450g",
-    price: 250,
-    available: true,
-  },
-  { id: "focaccia_300g", name: "Focaccia - ~300g", price: 250, available: true },
-  { id: "focaccia_800g", name: "Focaccia - ~800g", price: 650, available: true },
-  { id: "focaccia_1600g", name: "Focaccia - ~1600g", price: 1200, available: true },
-  {
-    id: "focaccia_slanina_800g",
-    name: "Focaccia - slanina - szalonnás ~800g",
-    price: 650,
-    available: true,
-  },
-  {
-    id: "focaccia_slanina_1600g",
-    name: "Focaccia - slanina - szalonnás ~1600g",
-    price: 1200,
-    available: true,
-  },
-  { id: "fugazetta_800g", name: "Fugazetta ~800g", price: 650, available: true },
-  { id: "fugazetta_1600g", name: "Fugazetta ~1600g", price: 1200, available: true },
-  {
-    id: "focaccia_zatar_800g",
-    name: "Focaccia sa Za'atar začinom - Za'atar-os focaccia ~750g",
-    price: 350,
-    available: true,
-  },
-  { id: "testo_1000g", name: "Pizza testo - Pizza tészta- 1000g", price: 300, available: true },
-  { id: "babka", name: "Babka sa čokoladom - Csokis babka - 600g", price: 750, available: true },
-  { id: "puz", name: "Puž - Csiga - 75g", price: 90, available: true },
-  { id: "tigrasti_hleb", name: "Tigrasti hleb - Tigris kenyér - 1000g", price: 450, available: false },
-  { id: "heljda_hleb", name: "Hleb sa heljdom - Hajdinás kenyét - 1000g", price: 450, available: false },
-  { id: "pan_cubano", name: "Pan Cubano - 800g", price: 370, available: false },
-  { id: "polubeli_hleb", name: "Polubeli hleb - Félfehér kenyér - 1000g", price: 400, available: false },
-  {
-    id: "hleb_jabuka_ovsene",
-    name: "Hleb sa jabukom i ovsenim pahuljicama - Almás-zabkásás kenyér - 1000g",
-    price: 450,
-    available: false,
-  },
-  {
-    id: "kukuruzni_hleb",
-    name: "Hleb sa kukuruznim brašnom - Kukoricás kenyér - 800g",
-    price: 350,
-    available: false,
-  },
-  {
-    id: "durum_hleb",
-    name: "Hleb sa durum pšenicom - Durumbúzás kenyér - 1000g",
-    price: 400,
-    available: false,
-  },
-  {
-    id: "einkorn_hleb",
-    name: "Hleb sa brašnom od jednozrnke - Alakoros kenyér - 900g",
-    price: 400,
-    available: false,
-  },
-  {
-    id: "bankuti_beli_hleb",
-    name: "Bankuti beli hleb - Bánkúti világos kenyér - 900g",
-    price: 400,
-    available: false,
-  },
-  { id: "krompir_hleb", name: "Hleb sa krompirom - Krumplis kenyér - 1000g", price: 400, available: false },
-  {
-    id: "bankuti_cipovka",
-    name: 'Cipovka "bankuti" - Bánkúti cipó - 900g',
-    price: 400,
-    available: false,
-  },
-  { id: "7zitarica_hleb", name: "Hleb sa 7 žitarica - 7 gabonás kenyér - 900g", price: 400, available: false },
-  {
-    id: "sremus_hleb",
-    name: "Hleb sa sremušem - Medvehagymás kenyér - 900g",
-    price: 400,
-    available: false,
-  },
-  {
-    id: "int_bankuti_brasno",
-    name: 'Integralno brašno "bánkúti" - Bánkúti teljes kiőrlésű liszt - 1000g',
-    price: 180,
-    available: true,
-  },
-  {
-    id: "int_bankuti__meko_brasno",
-    name: "Integralno meko brašno \"bánkúti\" - Bánkúti tk. selymes liszt - 1000g",
-    price: 200,
-    available: false,
-  },
-  {
-    id: "int_spleta_brasno",
-    name: "Integralno brašno od spelte - Teljes kiőrlésű tönkölyliszt - 1000g",
-    price: 250,
-    available: true,
-  },
-  {
-    id: "int_spleta_meko_brano",
-    name: "Intergralno meko brašno od splete - Tk. selymes tönkölyliszt - 1000g",
-    price: 300,
-    available: true,
-  },
-];
+async function seedRealOrders(realOrdersPath: string) {
+  const data: RealOrdersData = JSON.parse(readFileSync(realOrdersPath, "utf-8"));
 
-async function main() {
-  await prisma.orderItem.deleteMany();
-  await prisma.repeatingOrderItem.deleteMany();
-  await prisma.order.deleteMany();
-  await prisma.repeatingOrder.deleteMany();
-  await prisma.cycle.deleteMany();
-  await prisma.article.deleteMany();
-
-  await prisma.article.createMany({ data: articles });
-
-  const now = new Date();
-  const deliveryDate = new Date(now);
-  deliveryDate.setDate(now.getDate() + 3);
-
-  const cycle = await prisma.cycle.create({
-    data: {
-      label: isoWeekLabel(now),
-      status: "OPEN",
-      deliveryDate,
-    },
+  const cycleIdByKey = new Map<string, string>();
+  const cycleRows = data.cycles.map((c) => {
+    const id = randomUUID();
+    cycleIdByKey.set(c.key, id);
+    return { id, label: c.label, status: c.status, deliveryDate: new Date(c.deliveryDate) };
   });
+  await prisma.cycle.createMany({ data: cycleRows });
+
+  const orderRows = data.orders.map((o) => {
+    const cycleId = cycleIdByKey.get(o.cycleKey);
+    if (!cycleId) throw new Error(`No cycle found for key ${o.cycleKey}`);
+    const createdAt = new Date(o.createdAt);
+    return {
+      id: randomUUID(),
+      recipient: o.recipient,
+      phone: o.phone,
+      email: o.email,
+      location: o.location,
+      totalPrice: o.totalPrice,
+      status: o.status,
+      remark: o.remark,
+      archived: o.archived,
+      cycleId,
+      createdAt,
+      updatedAt: createdAt,
+    };
+  });
+  await prisma.order.createMany({ data: orderRows });
+
+  const itemRows = data.orders.flatMap((o, i) =>
+    o.items.map((item) => ({
+      id: randomUUID(),
+      orderId: orderRows[i].id,
+      articleId: item.articleId,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+    })),
+  );
+  await prisma.orderItem.createMany({ data: itemRows });
+
+  const { label, deliveryDate } = suggestCycleStart();
+  const openCycle = await prisma.cycle.create({
+    data: { label, status: "OPEN", deliveryDate },
+  });
+
+  console.log(
+    `Seeded ${articles.length} articles, ${cycleRows.length} historical cycles ` +
+      `(${orderRows.length} orders, ${itemRows.length} items), and 1 fresh open cycle (${openCycle.label}).`,
+  );
+}
+
+async function seedDemoOrders() {
+  const { label, deliveryDate } = suggestCycleStart();
+  const cycle = await prisma.cycle.create({ data: { label, status: "OPEN", deliveryDate } });
 
   await prisma.order.create({
     data: {
@@ -240,7 +167,25 @@ async function main() {
     },
   });
 
-  console.log(`Seeded ${articles.length} articles, 1 open cycle (${cycle.label}), and 3 orders.`);
+  console.log(`Seeded ${articles.length} articles, 1 open cycle (${cycle.label}), and 3 demo orders.`);
+}
+
+async function main() {
+  await prisma.orderItem.deleteMany();
+  await prisma.repeatingOrderItem.deleteMany();
+  await prisma.order.deleteMany();
+  await prisma.repeatingOrder.deleteMany();
+  await prisma.cycle.deleteMany();
+  await prisma.article.deleteMany();
+
+  await prisma.article.createMany({ data: articles });
+
+  const realOrdersPath = path.join(__dirname, "seed-data", "real-orders.json");
+  if (existsSync(realOrdersPath)) {
+    await seedRealOrders(realOrdersPath);
+  } else {
+    await seedDemoOrders();
+  }
 
   await seedAdminAccount();
 }

@@ -44,3 +44,6 @@ coverage/
 
 # Prisma
 apps/backend/src/generated/
+
+# Real customer data imported for local seeding (PII, never committed)
+apps/backend/prisma/seed-data/
