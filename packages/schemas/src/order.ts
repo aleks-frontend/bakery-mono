@@ -5,6 +5,9 @@ import { cycleSchema } from "./cycle.js";
 export const orderStatusSchema = z.enum(["NOT_RECEIVED", "IN_PROGRESS", "DELIVERED"]);
 export type OrderStatus = z.infer<typeof orderStatusSchema>;
 
+export const ORDER_PAGE_SIZES = [10, 25, 50] as const;
+export type OrderPageSize = (typeof ORDER_PAGE_SIZES)[number];
+
 export const orderItemSchema = z.object({
   id: z.string(),
   articleId: z.string(),
@@ -90,5 +93,19 @@ export const orderListQuerySchema = z.object({
   search: z.string().optional(),
   sortBy: z.enum(["createdAt", "totalPrice", "recipient"]).default("createdAt"),
   sortDir: z.enum(["asc", "desc"]).default("desc"),
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce
+    .number()
+    .int()
+    .refine((v) => (ORDER_PAGE_SIZES as readonly number[]).includes(v), {
+      message: `pageSize must be one of ${ORDER_PAGE_SIZES.join(", ")}`,
+    })
+    .default(25),
 });
 export type OrderListQuery = z.infer<typeof orderListQuerySchema>;
+
+export const orderListResponseSchema = z.object({
+  data: z.array(orderSchema),
+  total: z.number().int(),
+});
+export type OrderListResponse = z.infer<typeof orderListResponseSchema>;

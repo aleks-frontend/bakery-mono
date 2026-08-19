@@ -22,7 +22,7 @@ ordersRouter.get("/", async (req, res) => {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
-  const { status, cycleId, archived, hasRemark, search, sortBy, sortDir } = parsed.data;
+  const { status, cycleId, archived, hasRemark, search, sortBy, sortDir, page, pageSize } = parsed.data;
 
   const where: PrismaTypes.OrderWhereInput = {
     archived,
@@ -41,12 +41,17 @@ ordersRouter.get("/", async (req, res) => {
       : {}),
   };
 
-  const orders = await prisma.order.findMany({
-    where,
-    orderBy: { [sortBy]: sortDir },
-    include: orderInclude,
-  });
-  res.json(orders);
+  const [orders, total] = await Promise.all([
+    prisma.order.findMany({
+      where,
+      orderBy: { [sortBy]: sortDir },
+      include: orderInclude,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.order.count({ where }),
+  ]);
+  res.json({ data: orders, total });
 });
 
 ordersRouter.get("/:id", async (req, res) => {

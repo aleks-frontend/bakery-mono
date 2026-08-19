@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useOrdersQuery } from "@/hooks/useOrdersQuery"
 import { useBulkUpdateOrderStatusMutation } from "@/hooks/useUpdateOrderMutation"
@@ -13,7 +13,8 @@ import { OrderFormModal } from "@/components/OrderFormModal"
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal"
 import { ArchiveConfirmModal } from "@/components/ArchiveConfirmModal"
 import { BulkPanel } from "@/components/BulkPanel"
-import type { Order, OrderStatus, OrdersListParams } from "@bakery/api-client"
+import { ORDER_PAGE_SIZES } from "@bakery/api-client"
+import type { Order, OrderPageSize, OrderStatus, OrdersListParams } from "@bakery/api-client"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -27,6 +28,8 @@ import { Switch } from "@/components/ui/switch"
 import {
   Archive,
   ArchiveRestore,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   FileSpreadsheet,
   Loader2,
@@ -47,15 +50,30 @@ export function OrdersPage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
   const [showArchived, setShowArchived] = useState(false)
   const [hasRemarkFilter, setHasRemarkFilter] = useState(false)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState<OrderPageSize>(25)
 
-  const { data: orders = [], isLoading, error } = useOrdersQuery({
+  const queryParams = {
     search: searchQuery.trim() || undefined,
     status: statusFilter === "all" ? undefined : statusFilter,
     sortBy,
     sortDir,
     archived: showArchived,
     hasRemark: hasRemarkFilter || undefined,
-  })
+    page,
+    pageSize,
+  }
+  const { data: response, isLoading, error } = useOrdersQuery(queryParams)
+  const orders = response?.data ?? []
+  const total = response?.total ?? 0
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+
+  // Any change to what's being asked for (filters, sort, page size) invalidates
+  // the current page number — jumping back to page 1 avoids landing on a now
+  // out-of-range page (e.g. page 5 of a search that only has 2 results).
+  useEffect(() => {
+    setPage(1)
+  }, [searchQuery, statusFilter, sortBy, sortDir, showArchived, hasRemarkFilter, pageSize])
   const bulkStatusMutation = useBulkUpdateOrderStatusMutation()
   const deleteOrdersMutation = useDeleteOrderMutation()
   const archiveOrdersMutation = useArchiveOrderMutation()
@@ -286,10 +304,41 @@ export function OrdersPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            {t("Showing {{count}} orders", { count: orders.length })}
+            {total === 0
+              ? t("Showing 0 of 0 orders")
+              : t("Showing {{from}}-{{to}} of {{total}} orders", {
+                  from: (page - 1) * pageSize + 1,
+                  to: Math.min(page * pageSize, total),
+                  total,
+                })}
           </p>
+          <div className="flex items-center gap-2">
+            <label htmlFor="page-size-select" className="text-sm text-muted-foreground">
+              {t("Rows per page")}
+            </label>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(value) => setPageSize(Number(value) as OrderPageSize)}
+            >
+              <SelectTrigger id="page-size-select" className="w-[80px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ORDER_PAGE_SIZES.map((size) => (
+                  <SelectItem key={size} value={String(size)}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
+        {/* Keyed by the query so any filter/sort/page change remounts the table
+            with a clean selection — otherwise checked rows from a previous page
+            or filter linger in its internal (id-keyed) selection state even
+            though they're no longer visible. */}
         <OrdersTable
+          key={JSON.stringify(queryParams)}
           orders={orders}
           sortBy={sortBy}
           sortDir={sortDir}
@@ -300,6 +349,31 @@ export function OrdersPage() {
           onMakeRepeating={handleMakeRepeating}
           onSelectionChange={setSelectedOrders}
         />
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            {t("Page {{page}} of {{totalPages}}", { page, totalPages })}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              {t("Previous")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+            >
+              {t("Next")}
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </div>
 
       <BulkPanel count={selectedOrders.length}>

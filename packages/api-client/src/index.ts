@@ -37,11 +37,14 @@ export type { PublicArticle, PublicArticlesResponse } from "@bakery/schemas";
 export type {
   Order,
   OrderItem,
+  OrderListResponse,
+  OrderPageSize,
   OrderStatus,
   CreateOrderInput,
   UpdateOrderInput,
   CreatePublicOrderInput,
 } from "@bakery/schemas";
+export { ORDER_PAGE_SIZES } from "@bakery/schemas";
 export type {
   Cycle,
   CycleStatus,

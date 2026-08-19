@@ -67,8 +67,9 @@ The old `acceptingOrders` flag (previously a `CONFIG` row in the Google Sheet, t
 - **i18n:** All user-visible strings go through `useTranslation()` / `t()`. Add keys to all three locale files (`en`, `sr`, `hu`) when adding UI copy. `OrderStatus` values are `NOT_RECEIVED`/`IN_PROGRESS`/`DELIVERED` (matching the backend enum) but `StatusBadge.tsx` maps them to the existing human-readable i18n keys ("Not received", "In Progress", "Delivered") rather than adding new SCREAMING_SNAKE_CASE-keyed translations.
 - **TypeScript:** Strict mode with `noUnusedLocals` and `noUnusedParameters` — the build will fail on unused symbols.
 
+Order list pagination is server-side (`GET /api/orders` also takes `page` and `pageSize`, the latter restricted to `ORDER_PAGE_SIZES` — 10/25/50 — from `@bakery/schemas`; the response shape is `{ data: Order[], total: number }` rather than a bare array). `OrdersPage` resets `page` to 1 whenever any filter/sort/pageSize changes, and keys `OrdersTable` on the full query params so row selection (which `OrdersTable` tracks internally by row id) doesn't linger across a page or filter change.
+
 ## Known incomplete features
 
-- No pagination (planned for large order lists).
 - No date-range filter (planned).
 - Manual order creation/editing has no article-capacity validation feedback beyond the toast error surfaced by the backend's 409 (no inline "N remaining" hint in the item picker yet).

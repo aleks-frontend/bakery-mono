@@ -1,5 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import type { CreateOrderInput, Order, OrderStatus, RepeatingOrder, UpdateOrderInput } from "@bakery/schemas";
+import type {
+  CreateOrderInput,
+  Order,
+  OrderListResponse,
+  OrderPageSize,
+  OrderStatus,
+  RepeatingOrder,
+  UpdateOrderInput,
+} from "@bakery/schemas";
 import type { HttpClient } from "./http.js";
 
 export interface OrdersListParams {
@@ -10,10 +18,12 @@ export interface OrdersListParams {
   search?: string;
   sortBy?: "createdAt" | "totalPrice" | "recipient";
   sortDir?: "asc" | "desc";
+  page?: number;
+  pageSize?: OrderPageSize;
 }
 
 export interface OrdersClient {
-  list(params?: OrdersListParams): Promise<Order[]>;
+  list(params?: OrdersListParams): Promise<OrderListResponse>;
   get(id: string): Promise<Order>;
   create(input: CreateOrderInput): Promise<Order>;
   update(id: string, input: UpdateOrderInput): Promise<Order>;
@@ -33,13 +43,15 @@ function buildQuery(params?: OrdersListParams): string {
   if (params.search) qs.set("search", params.search);
   if (params.sortBy) qs.set("sortBy", params.sortBy);
   if (params.sortDir) qs.set("sortDir", params.sortDir);
+  if (params.page) qs.set("page", String(params.page));
+  if (params.pageSize) qs.set("pageSize", String(params.pageSize));
   const s = qs.toString();
   return s ? `?${s}` : "";
 }
 
 export function createOrdersClient(http: HttpClient): OrdersClient {
   return {
-    list: (params) => http.request<Order[]>(`/api/orders${buildQuery(params)}`),
+    list: (params) => http.request<OrderListResponse>(`/api/orders${buildQuery(params)}`),
     get: (id) => http.request<Order>(`/api/orders/${id}`),
     create: (input) => http.request<Order>("/api/orders", { method: "POST", body: input }),
     update: (id, input) => http.request<Order>(`/api/orders/${id}`, { method: "PATCH", body: input }),
