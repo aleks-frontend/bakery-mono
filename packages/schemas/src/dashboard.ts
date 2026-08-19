@@ -1,5 +1,4 @@
 import { z } from "zod";
-import type { OrderStatus } from "./order.js";
 
 export const dashboardStatsQuerySchema = z.object({
   cycleId: z.string().optional(),
@@ -20,7 +19,6 @@ export interface DashboardStats {
     averageOrderValue: number;
     byCycle: { cycleId: string; label: string; total: number }[];
   };
-  statusBreakdown: Record<OrderStatus, number>;
   topArticles: { articleId: string; name: string; quantity: number }[];
   topArticlesAllTime: { articleId: string; name: string; quantity: number }[];
 }

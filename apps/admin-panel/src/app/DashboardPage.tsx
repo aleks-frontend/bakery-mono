@@ -7,25 +7,17 @@ import {
   LabelList,
   Line,
   LineChart,
-  Rectangle,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
-  type BarShapeProps,
 } from "recharts"
 import { useDashboardStatsQuery } from "@/hooks/useDashboardStatsQuery"
 import { useCyclesQuery } from "@/hooks/useCyclesQuery"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import type { OrderStatus } from "@bakery/api-client"
 
-const STATUS_COLORS: Record<OrderStatus, string> = {
-  NOT_RECEIVED: "#c99a3e",
-  IN_PROGRESS: "#c4703b",
-  DELIVERED: "#7c8b6f",
-}
 const METRIC_COLOR = "#8b5a2b"
 
 function formatRsd(n: number): string {
@@ -149,11 +141,6 @@ export function DashboardPage() {
     )
   }
 
-  const statusData: { key: OrderStatus; label: string; value: number }[] = [
-    { key: "NOT_RECEIVED", label: t("Not received"), value: stats.statusBreakdown.NOT_RECEIVED },
-    { key: "IN_PROGRESS", label: t("In Progress"), value: stats.statusBreakdown.IN_PROGRESS },
-    { key: "DELIVERED", label: t("Delivered"), value: stats.statusBreakdown.DELIVERED },
-  ]
   const volumeData = stats.orderVolume.byCycle.map((c) => ({ label: c.label, count: c.count }))
   const revenueData = stats.revenue.byCycle.map((c) => ({ label: c.label, total: c.total }))
 
@@ -189,27 +176,6 @@ export function DashboardPage() {
         <StatTile label={t("Revenue")} value={formatRsd(stats.revenue.current)} />
         <StatTile label={t("Average Order Value")} value={formatRsd(stats.revenue.averageOrderValue)} />
       </div>
-
-      <ChartCard title={t("Status Breakdown")}>
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={statusData} margin={{ top: 20, right: 16, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
-            <XAxis dataKey="label" tickLine={false} axisLine={false} />
-            <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={32} />
-            <Tooltip />
-            <Bar
-              dataKey="value"
-              maxBarSize={80}
-              shape={(props: BarShapeProps) => {
-                const { key: statusKey } = props.payload as { key: OrderStatus }
-                return <Rectangle {...props} fill={STATUS_COLORS[statusKey]} radius={[4, 4, 0, 0]} />
-              }}
-            >
-              <LabelList dataKey="value" position="top" />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </ChartCard>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <ChartCard title={t("Order Volume by Cycle")}>

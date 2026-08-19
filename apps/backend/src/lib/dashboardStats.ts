@@ -1,8 +1,7 @@
-import { orderStatusSchema, type DashboardStats } from "@bakery/schemas";
+import type { DashboardStats } from "@bakery/schemas";
 import { prisma } from "./prisma.js";
 import { getCurrentCycle } from "./availability.js";
 
-const ORDER_STATUSES = orderStatusSchema.options;
 const TOP_ARTICLES_LIMIT = 10;
 
 export async function getDashboardStats(requestedCycleId?: string): Promise<DashboardStats | null> {
@@ -13,10 +12,9 @@ export async function getDashboardStats(requestedCycleId?: string): Promise<Dash
 
   if (!scopeCycle) return null;
 
-  const [cycles, groupedByCycle, groupedByStatus, groupedByArticle, groupedByArticleAllTime] = await Promise.all([
+  const [cycles, groupedByCycle, groupedByArticle, groupedByArticleAllTime] = await Promise.all([
     prisma.cycle.findMany({ orderBy: { deliveryDate: "asc" } }),
     prisma.order.groupBy({ by: ["cycleId"], _count: { _all: true }, _sum: { totalPrice: true } }),
-    prisma.order.groupBy({ by: ["status"], where: { cycleId: scopeCycle.id }, _count: { _all: true } }),
     prisma.orderItem.groupBy({
       by: ["articleId"],
       where: { order: { cycleId: scopeCycle.id } },
@@ -42,13 +40,6 @@ export async function getDashboardStats(requestedCycleId?: string): Promise<Dash
 
   const currentCount = countByCycleId.get(scopeCycle.id) ?? 0;
   const currentRevenue = totalByCycleId.get(scopeCycle.id) ?? 0;
-
-  const statusBreakdown = Object.fromEntries(
-    ORDER_STATUSES.map((status) => [
-      status,
-      groupedByStatus.find((row) => row.status === status)?._count._all ?? 0,
-    ]),
-  ) as DashboardStats["statusBreakdown"];
 
   const articleIds = [
     ...new Set([...groupedByArticle, ...groupedByArticleAllTime].map((row) => row.articleId)),
@@ -81,7 +72,6 @@ export async function getDashboardStats(requestedCycleId?: string): Promise<Dash
       averageOrderValue: currentCount > 0 ? Math.round(currentRevenue / currentCount) : 0,
       byCycle: revenueByCycle,
     },
-    statusBreakdown,
     topArticles,
     topArticlesAllTime,
   };
