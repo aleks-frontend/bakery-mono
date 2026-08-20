@@ -116,9 +116,13 @@ export function DashboardPage() {
   const { data: cycles = [] } = useCyclesQuery()
   const [selectedCycleId, setSelectedCycleId] = useState<string | undefined>(undefined)
   const [topArticlesScope, setTopArticlesScope] = useState<TopArticlesScope>("cycle")
-  const { data: stats, isLoading, error } = useDashboardStatsQuery(selectedCycleId)
+  const { data: stats, isPending, error } = useDashboardStatsQuery(selectedCycleId)
 
-  if (isLoading) {
+  // isPending (no data yet) rather than isLoading (isPending && isFetching) —
+  // isLoading can be false for a tick before data actually lands (e.g. right
+  // after login, as the query starts fresh), which briefly fell through to
+  // the error branch below since `!stats` was still true but `error` was null.
+  if (isPending) {
     return (
       <div className="container mx-auto py-8">
         <div className="flex items-center justify-center h-64">
@@ -128,7 +132,7 @@ export function DashboardPage() {
     )
   }
 
-  if (error || !stats) {
+  if (error) {
     return (
       <div className="container mx-auto py-8">
         <div className="flex items-center justify-center h-64">
