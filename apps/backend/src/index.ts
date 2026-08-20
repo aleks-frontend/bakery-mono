@@ -1,4 +1,6 @@
 import "dotenv/config";
+import "./instrument.js";
+import * as Sentry from "@sentry/node";
 import cors from "cors";
 import express from "express";
 import { toNodeHandler } from "better-auth/node";
@@ -48,6 +50,9 @@ app.use("/api/dashboard", dashboardRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/public", publicRouter);
 app.use("/api/repeating-orders", repeatingOrdersRouter);
+
+// Must come after all routes and before any other error-handling middleware.
+Sentry.setupExpressErrorHandler(app);
 
 app.listen(port, () => {
   console.log(`Backend listening on port ${port}`);

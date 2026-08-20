@@ -1,11 +1,18 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import * as Sentry from "@sentry/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
 import Modal from "react-modal";
 import "@/i18n";
 import App from "./App";
 import "./index.css";
+
+// No-ops if VITE_SENTRY_DSN is unset, same convention as the backend's Resend/Sentry setup.
+Sentry.init({
+  dsn: import.meta.env.VITE_SENTRY_DSN,
+  environment: import.meta.env.MODE,
+});
 
 Modal.setAppElement("#root");
 
