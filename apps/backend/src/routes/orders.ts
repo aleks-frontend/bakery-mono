@@ -68,7 +68,7 @@ ordersRouter.post("/", async (req, res) => {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
-  const { cycleId, items, ...orderFields } = parsed.data;
+  const { cycleId, items, locale, ...orderFields } = parsed.data;
 
   const cycle = await prisma.cycle.findUnique({ where: { id: cycleId } });
   if (!cycle) {
@@ -91,7 +91,7 @@ ordersRouter.post("/", async (req, res) => {
     },
     include: orderInclude,
   });
-  void sendOrderNotifications(order);
+  void sendOrderNotifications(order, locale);
   res.status(201).json(order);
 });
 

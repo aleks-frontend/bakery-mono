@@ -5,6 +5,12 @@ import { cycleSchema } from "./cycle.js";
 export const orderStatusSchema = z.enum(["NOT_RECEIVED", "IN_PROGRESS", "DELIVERED"]);
 export type OrderStatus = z.infer<typeof orderStatusSchema>;
 
+// Language the order was submitted in, used to pick which language the
+// customer confirmation email is sent in — not persisted on the Order
+// itself, just threaded through from creation to the notification send.
+export const orderLocaleSchema = z.enum(["en", "sr", "hu"]);
+export type OrderLocale = z.infer<typeof orderLocaleSchema>;
+
 export const ORDER_PAGE_SIZES = [10, 25, 50] as const;
 export type OrderPageSize = (typeof ORDER_PAGE_SIZES)[number];
 
@@ -52,6 +58,7 @@ export const createOrderSchema = z.object({
   remark: z.string().nullable().optional(),
   cycleId: z.string().min(1),
   items: z.array(orderItemInputSchema).min(1),
+  locale: orderLocaleSchema.default("en"),
 });
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 
@@ -74,6 +81,7 @@ export const createPublicOrderSchema = z.object({
   remark: z.string().nullable().optional(),
   items: z.array(orderItemInputSchema).min(1),
   repeat: z.boolean().default(false),
+  locale: orderLocaleSchema.default("en"),
 });
 export type CreatePublicOrderInput = z.infer<typeof createPublicOrderSchema>;
 

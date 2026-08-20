@@ -153,8 +153,11 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
     if (isEdit) {
       updateMutation.mutate({ id: order.id, input: fields }, { onSuccess: () => onOpenChange(false) })
     } else {
+      // Manual orders are entered by staff for local (Serbian) customers, so
+      // the confirmation email defaults to Serbian rather than the schema's
+      // English fallback — there's no per-order language picker in this form.
       createMutation.mutate(
-        { ...fields, cycleId: currentCycle!.id },
+        { ...fields, cycleId: currentCycle!.id, locale: "sr" },
         {
           onSuccess: (createdOrder) => {
             if (repeat) makeRepeatingMutation.mutate(createdOrder.id)

@@ -12,7 +12,7 @@ interface OrderSummaryModalProps {
   onSuccess: (summary: OrderSummary) => void;
 }
 
-function toCreateOrderInput(summary: OrderSummary): CreatePublicOrderInput {
+function toCreateOrderInput(summary: OrderSummary, locale: CreatePublicOrderInput["locale"]): CreatePublicOrderInput {
   return {
     recipient: summary.recipient,
     phone: summary.phone,
@@ -21,6 +21,7 @@ function toCreateOrderInput(summary: OrderSummary): CreatePublicOrderInput {
     remark: summary.remark,
     repeat: summary.repeat,
     items: summary.items.map((item) => ({ articleId: item.articleId, quantity: item.quantity })),
+    locale,
   };
 }
 
@@ -30,12 +31,15 @@ export function OrderSummaryModal({
   summary,
   onSuccess,
 }: OrderSummaryModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { mutateAsync, isPending } = useSubmitOrder();
 
   const handleConfirm = () => {
     if (!summary) return;
-    mutateAsync(toCreateOrderInput(summary))
+    const langCode = (i18n.resolvedLanguage || i18n.language || "en").split("-")[0];
+    const locale: CreatePublicOrderInput["locale"] =
+      langCode === "sr" || langCode === "hu" ? langCode : "en";
+    mutateAsync(toCreateOrderInput(summary, locale))
       .then(() => onSuccess(summary))
       .catch(() => {
         // Error already surfaced via the toast in useSubmitOrder

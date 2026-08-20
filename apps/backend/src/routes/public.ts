@@ -50,7 +50,7 @@ publicRouter.post("/orders", async (req, res) => {
     return;
   }
 
-  const { repeat, items, ...orderFields } = parsed.data;
+  const { repeat, items, locale, ...orderFields } = parsed.data;
 
   const priced = await priceAndValidateItems(cycle.id, items);
   if (!priced.ok) {
@@ -79,6 +79,6 @@ publicRouter.post("/orders", async (req, res) => {
     });
   });
 
-  void sendOrderNotifications(order);
+  void sendOrderNotifications(order, locale);
   res.status(201).json(order);
 });
