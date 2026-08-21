@@ -28,21 +28,25 @@ export const auth = betterAuth({
   // Scoped to production only: Secure cookies are never sent over the plain
   // http://localhost dev servers, where the default SameSite=Lax already
   // works fine since same-host-different-port counts as same-site.
-  // Deliberately NOT setting `partitioned: true` (CHIPS) here — that's for
-  // cookies used inside a cross-site iframe, which the admin panel never is
-  // (it's always loaded top-level). Setting it anyway caused a real bug: a
-  // transient 401 ("Unauthorized") right after login, on the very first
-  // fetch(es) the just-redirected page fires — the browser needs extra time
-  // to commit a Partitioned cookie compared to a plain one, which lands
-  // right in the gap between the sign-in redirect and the following
-  // requests. Confirmed via a captured production fetch log showing genuine
-  // 401s (not just a UI race) immediately post-login.
+  //
+  // `partitioned: true` (CHIPS) is required here, not optional — tried
+  // removing it on the theory that it only matters for cross-site iframes
+  // (which this app never is), but direct testing proved that wrong: without
+  // it, the session cookie never worked at all (`GET /api/orders` kept
+  // returning 401 even 2+ seconds after a successful sign-in, and a fresh
+  // reload bounced straight back to /login — not a timing race, a total
+  // failure). Chrome's third-party-cookie blocking treats *any* cross-site
+  // cookie context this way, plain `fetch(..., { credentials: "include" })`
+  // included, not just iframes — CHIPS is the sanctioned way to keep a
+  // SameSite=None cookie working once third-party cookies are blocked.
+  // Restored after confirming the removal made things strictly worse.
   advanced:
     process.env.NODE_ENV === "production"
       ? {
           defaultCookieAttributes: {
             sameSite: "none",
             secure: true,
+            partitioned: true,
           },
         }
       : undefined,
