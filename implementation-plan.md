@@ -332,4 +332,14 @@ Reminder only — not yet scoped in detail, revisit when this phase starts. Noth
 - [ ] Decide whether to enable source map upload (readable stack traces for the minified frontend builds) — needs a Sentry auth token wired into each frontend's Dockerfile build stage if so
 - [ ] Decide on sampling rate / whether session replay or performance monitoring are wanted, or just plain error capture
 
+## Phase 25 — Preserve Intended Destination Through Login Redirect
+
+Reminder only, follow-up from the Telegram-notification order deep-link work (Phase 14's `sendTelegramNotification` links to `?orderId=` on `OrdersPage`, opening that order's details modal directly) — not yet implemented.
+
+Problem: `RequireAuth` (`apps/admin-panel/src/components/RequireAuth.tsx`) redirects an unauthenticated visit straight to `/login` via `<Navigate to="/login" replace />`, dropping whatever path/query the visit was actually for. A baker clicking the Telegram link while logged out lands on a bare login screen instead of back at the order they clicked through for.
+
+- [ ] Capture the original location in `RequireAuth` when redirecting, e.g. `<Navigate to="/login" state={{ from: location }} replace />` (via `useLocation()`)
+- [ ] `LoginPage.tsx` reads `location.state?.from` (falling back to `/` as today) and navigates there instead of always `/` once `signIn.email()` succeeds
+- [ ] Verify it round-trips through a `?orderId=` deep link specifically, since that's the motivating case
+
 A customer who added a remark (e.g. "no nuts please", a delivery instruction) currently has no way to confirm it was actually captured before or after submitting.

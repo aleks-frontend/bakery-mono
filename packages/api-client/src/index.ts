@@ -12,7 +12,7 @@ export {
   useUpdateArticleAvailabilityMutation,
 } from "./articles.js";
 export type { ArticlesClient } from "./articles.js";
-export { createOrdersClient, useOrdersQuery, ordersQueryKey } from "./orders.js";
+export { createOrdersClient, useOrdersQuery, ordersQueryKey, useOrderQuery, orderQueryKey } from "./orders.js";
 export type { OrdersClient, OrdersListParams } from "./orders.js";
 export {
   createCyclesClient,

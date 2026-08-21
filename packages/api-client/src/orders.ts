@@ -71,3 +71,16 @@ export const ordersQueryKey = (params?: OrdersListParams) => ["orders", params ?
 export function useOrdersQuery(client: OrdersClient, params?: OrdersListParams) {
   return useQuery({ queryKey: ordersQueryKey(params), queryFn: () => client.list(params) });
 }
+
+export const orderQueryKey = (id?: string) => ["order", id ?? ""] as const;
+
+/** Fetches a single order by id regardless of any list's filters/pagination —
+ * used to resolve a deep-linked order (e.g. from a Telegram notification link)
+ * that may not be present on whatever page/filter the orders list currently has. */
+export function useOrderQuery(client: OrdersClient, id: string | undefined) {
+  return useQuery({
+    queryKey: orderQueryKey(id),
+    queryFn: () => client.get(id!),
+    enabled: !!id,
+  });
+}

@@ -18,7 +18,9 @@ function buildMessage(order: OrderWithRelations): string {
     "🛒 *Nova porudžbina je primljena!*",
     "",
     "📊 *Nova porudžbina je dodata u sistem.*",
-    `👉 [Otvori Admin Panel](${ADMIN_PANEL_URL})`,
+    // HashRouter: "/" is the orders list, ?orderId= opens that order's
+    // details modal directly (see OrdersPage's useSearchParams wiring).
+    `👉 [Otvori porudžbinu](${ADMIN_PANEL_URL}/#/?orderId=${order.id})`,
     "",
     `👤 Naručilac: *${order.recipient}*`,
     `📞 Telefon: ${order.phone}`,

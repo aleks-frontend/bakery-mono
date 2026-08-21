@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import type { RowSelectionState } from "@tanstack/react-table"
 import { useTranslation } from "react-i18next"
 import { useOrdersQuery } from "@/hooks/useOrdersQuery"
+import { useOrderQuery } from "@/hooks/useOrderQuery"
 import { useBulkUpdateOrderStatusMutation } from "@/hooks/useUpdateOrderMutation"
 import { useDeleteOrderMutation } from "@/hooks/useDeleteOrderMutation"
 import { useArchiveOrderMutation } from "@/hooks/useArchiveOrderMutation"
@@ -138,12 +140,38 @@ export function OrdersPage() {
   const makeRepeatingMutation = useMakeRepeatingMutation()
   const deleteRepeatingOrderMutation = useDeleteRepeatingOrderMutation()
 
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
-  // Derived from the live query result (not a captured snapshot) so edits/status
-  // changes made while the details modal is open are reflected immediately,
-  // instead of requiring a close+reopen to pick up the refetched data.
-  const selectedOrder = selectedOrderId ? (orders.find((o) => o.id === selectedOrderId) ?? null) : null
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+  // Backed by the URL (?orderId=) rather than local state so a direct link
+  // (e.g. the "Open Admin Panel" link in the baker's Telegram notification)
+  // can open straight to a specific order's details modal.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedOrderId = searchParams.get("orderId")
+  const isDetailsModalOpen = selectedOrderId !== null
+
+  const openDetailsModal = (orderId: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set("orderId", orderId)
+      return next
+    })
+  }
+  const closeDetailsModal = () => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete("orderId")
+      return next
+    })
+  }
+
+  // Prefer data already fetched for the current page/selection (kept live by
+  // the list query's own refetches); fall back to a direct by-id fetch for a
+  // deep-linked order that isn't part of whatever page/filters are active.
+  const cachedSelectedOrder = selectedOrderId
+    ? (orders.find((o) => o.id === selectedOrderId) ?? orderCache.get(selectedOrderId) ?? null)
+    : null
+  const { data: fetchedSelectedOrder } = useOrderQuery(
+    selectedOrderId && !cachedSelectedOrder ? selectedOrderId : undefined,
+  )
+  const selectedOrder = cachedSelectedOrder ?? fetchedSelectedOrder ?? null
   const [isManualOrderModalOpen, setIsManualOrderModalOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [orderIdsToDelete, setOrderIdsToDelete] = useState<string[]>([])
@@ -166,8 +194,7 @@ export function OrdersPage() {
   }
 
   const handleViewDetails = (order: Order) => {
-    setSelectedOrderId(order.id)
-    setIsDetailsModalOpen(true)
+    openDetailsModal(order.id)
   }
 
   const handleBulkStatusChange = (status: OrderStatus) => {
@@ -487,7 +514,7 @@ export function OrdersPage() {
       <OrderDetailsModal
         order={selectedOrder}
         open={isDetailsModalOpen}
-        onOpenChange={setIsDetailsModalOpen}
+        onOpenChange={(open) => { if (!open) closeDetailsModal() }}
         onDeleteOrder={handleDeleteOrder}
         onToggleArchive={handleToggleArchive}
         onMakeRepeating={handleMakeRepeating}
@@ -506,7 +533,7 @@ export function OrdersPage() {
         entityPlural={t("orders")}
         onDelete={(ids) => deleteOrdersMutation.mutateAsync(ids).then(() => {})}
         onSuccess={() => {
-          setIsDetailsModalOpen(false)
+          closeDetailsModal()
           setRowSelection({})
         }}
       />
@@ -519,7 +546,7 @@ export function OrdersPage() {
         entityPlural={t("orders")}
         onArchive={(ids) => archiveOrdersMutation.mutateAsync(ids).then(() => {})}
         onSuccess={() => {
-          setIsDetailsModalOpen(false)
+          closeDetailsModal()
           setRowSelection({})
         }}
       />
