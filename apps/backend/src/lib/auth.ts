@@ -22,20 +22,27 @@ export const auth = betterAuth({
     disableSignUp: true,
   },
   trustedOrigins,
-  // In production the admin panel and backend sit on different Railway
-  // hostnames (genuinely different sites, not just different ports on
-  // localhost), so the session cookie needs SameSite=None to survive a
-  // cross-site fetch. Scoped to production only: Secure cookies are never
-  // sent over the plain http://localhost dev servers, where the default
-  // SameSite=Lax already works fine since same-host-different-port counts
-  // as same-site.
+  // In production the admin panel and backend sit on different hostnames
+  // (genuinely different sites, not just different ports on localhost), so
+  // the session cookie needs SameSite=None to survive a cross-site fetch.
+  // Scoped to production only: Secure cookies are never sent over the plain
+  // http://localhost dev servers, where the default SameSite=Lax already
+  // works fine since same-host-different-port counts as same-site.
+  // Deliberately NOT setting `partitioned: true` (CHIPS) here — that's for
+  // cookies used inside a cross-site iframe, which the admin panel never is
+  // (it's always loaded top-level). Setting it anyway caused a real bug: a
+  // transient 401 ("Unauthorized") right after login, on the very first
+  // fetch(es) the just-redirected page fires — the browser needs extra time
+  // to commit a Partitioned cookie compared to a plain one, which lands
+  // right in the gap between the sign-in redirect and the following
+  // requests. Confirmed via a captured production fetch log showing genuine
+  // 401s (not just a UI race) immediately post-login.
   advanced:
     process.env.NODE_ENV === "production"
       ? {
           defaultCookieAttributes: {
             sameSite: "none",
             secure: true,
-            partitioned: true,
           },
         }
       : undefined,
