@@ -165,7 +165,7 @@ function buildCustomerConfirmationEmail(
   const deliveryDate = order.cycle.deliveryDate.toLocaleDateString(DATE_LOCALE[locale]);
 
   const metaRows = [
-    labelValueRow(t.deliveryLabel, `${order.cycle.label} (${deliveryDate})`),
+    labelValueRow(t.deliveryLabel, deliveryDate),
     labelValueRow(t.locationLabel, order.location),
     order.remark ? labelValueRow(t.remarkLabel, order.remark) : "",
   ].join("");
