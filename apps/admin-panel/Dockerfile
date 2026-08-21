@@ -26,6 +26,8 @@ RUN npm run build -w @bakery/api-client
 
 ARG VITE_BACKEND_URL
 ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
+ARG VITE_SENTRY_DSN
+ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
 RUN npm run build -w @bakery/admin-panel
 
 FROM nginx:1.27-alpine AS runtime
