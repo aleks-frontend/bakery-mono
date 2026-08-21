@@ -4,6 +4,7 @@ import type { RowSelectionState } from "@tanstack/react-table"
 import { useTranslation } from "react-i18next"
 import { useOrdersQuery } from "@/hooks/useOrdersQuery"
 import { useOrderQuery } from "@/hooks/useOrderQuery"
+import { useCyclesQuery } from "@/hooks/useCyclesQuery"
 import { useBulkUpdateOrderStatusMutation } from "@/hooks/useUpdateOrderMutation"
 import { useDeleteOrderMutation } from "@/hooks/useDeleteOrderMutation"
 import { useArchiveOrderMutation } from "@/hooks/useArchiveOrderMutation"
@@ -50,6 +51,7 @@ export function OrdersPage() {
   const { t } = useTranslation()
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all")
+  const [cycleFilter, setCycleFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<SortableColumn>("createdAt")
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
   const [showArchived, setShowArchived] = useState(false)
@@ -60,6 +62,7 @@ export function OrdersPage() {
   const queryParams = {
     search: searchQuery.trim() || undefined,
     status: statusFilter === "all" ? undefined : statusFilter,
+    cycleId: cycleFilter === "all" ? undefined : cycleFilter,
     sortBy,
     sortDir,
     archived: showArchived,
@@ -71,6 +74,7 @@ export function OrdersPage() {
   const orders = response?.data ?? []
   const total = response?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  const { data: cycles = [] } = useCyclesQuery()
 
   // Selection is keyed by order id and controlled here (not owned by
   // OrdersTable) so it can span every order matching the current filters,
@@ -99,7 +103,7 @@ export function OrdersPage() {
   useEffect(() => {
     setPage(1)
     setRowSelection({})
-  }, [searchQuery, statusFilter, sortBy, sortDir, showArchived, hasRemarkFilter, pageSize])
+  }, [searchQuery, statusFilter, cycleFilter, sortBy, sortDir, showArchived, hasRemarkFilter, pageSize])
 
   const selectedIds = useMemo(
     () => Object.keys(rowSelection).filter((id) => rowSelection[id]),
@@ -370,6 +374,19 @@ export function OrdersPage() {
             <SelectItem value="NOT_RECEIVED">{t("Not received")}</SelectItem>
             <SelectItem value="IN_PROGRESS">{t("In Progress")}</SelectItem>
             <SelectItem value="DELIVERED">{t("Delivered")}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={cycleFilter} onValueChange={setCycleFilter}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder={t("Filter by cycle")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("All Cycles")}</SelectItem>
+            {cycles.map((cycle) => (
+              <SelectItem key={cycle.id} value={cycle.id}>
+                {cycle.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <div className="flex items-center gap-2 shrink-0">
