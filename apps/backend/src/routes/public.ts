@@ -5,15 +5,21 @@ import { computeAvailability, getCurrentCycle, getOrderedQuantitiesByArticle } f
 import { priceAndValidateItems } from "../lib/orderPricing.js";
 import { sendOrderNotifications } from "../lib/email.js";
 import { sendTelegramNotification } from "../lib/telegram.js";
+import { articles as articleCatalog } from "../lib/articlesCatalog.js";
 import { orderInclude } from "./orders.js";
 
 export const publicRouter = Router();
 
+// Customers are used to the order the old Google Sheet listed articles in,
+// not alphabetical — so the public order form sorts by each article's
+// position in the seed catalog rather than by name. Articles created later
+// through the admin panel (not in the catalog) sort after all catalog ones,
+// in whatever order the DB returns them.
+const catalogOrder = new Map(articleCatalog.map((article, index) => [article.id, index]));
+
 publicRouter.get("/articles", async (_req, res) => {
-  const [articles, currentCycle] = await Promise.all([
-    prisma.article.findMany({ orderBy: { name: "asc" } }),
-    getCurrentCycle(),
-  ]);
+  const [articles, currentCycle] = await Promise.all([prisma.article.findMany(), getCurrentCycle()]);
+  articles.sort((a, b) => (catalogOrder.get(a.id) ?? Infinity) - (catalogOrder.get(b.id) ?? Infinity));
 
   const orderedQty = currentCycle
     ? await getOrderedQuantitiesByArticle(currentCycle.id)

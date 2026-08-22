@@ -8,7 +8,7 @@ import { PrismaClient } from "../src/generated/prisma/client.js";
 import type { CycleStatus, OrderStatus } from "../src/generated/prisma/enums.js";
 import { auth } from "../src/lib/auth.js";
 import { suggestCycleStart } from "../src/lib/cycleDates.js";
-import { articles } from "./articles-catalog.js";
+import { articles } from "../src/lib/articlesCatalog.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
