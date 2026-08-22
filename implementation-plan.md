@@ -351,3 +351,18 @@ Problem: `RequireAuth` (`apps/admin-panel/src/components/RequireAuth.tsx`) redir
 - [ ] Capture the original location in `RequireAuth` when redirecting, e.g. `<Navigate to="/login" state={{ from: location }} replace />` (via `useLocation()`)
 - [ ] `LoginPage.tsx` reads `location.state?.from` (falling back to `/` as today) and navigates there instead of always `/` once `signIn.email()` succeeds
 - [ ] Verify it round-trips through a `?orderId=` deep link specifically, since that's the motivating case
+
+## Phase 26 — Flour-Type Attribute for Ordering/Grouping the Order-Form Article Picker
+
+Reminder only, follow-up to the catalog-order sort stopgap — not yet implemented.
+
+Current state: `GET /api/public/articles` sorts by each article's position in the seed catalog array (`src/lib/articlesCatalog.ts`) rather than alphabetically, so the order-form's article picker matches the old Google Sheet's ordering customers are used to. That works today but is inherently fragile — the order is implicit in a source file's array position, invisible in the admin panel, and any article added later through the UI (not the seed catalog) just falls to the end with no way to place it elsewhere.
+
+Ask: add a real `flourType` (or similar — exact taxonomy TBD, e.g. "White", "Rye", "Spelt", "Einkorn") attribute to `Article`, and use it to both order and group the order-form's article `<select>`/picker — replacing the catalog-array-position hack with something the baker can actually see and manage.
+
+- [ ] Schema change: add the attribute to `Article` (`apps/backend/prisma/schema.prisma`) — needs a migration; decide free-text vs. a fixed enum/lookup (same open question Phase 22 already flagged for its own proposed `category` field — worth deciding both at once rather than separately, since they may end up being the same underlying concept or need to coexist)
+- [ ] Add the field to the Articles admin UI (`ArticleModal`/`ArticlesTable`) for create/edit
+- [ ] Update `GET /api/public/articles` to sort/group by the new attribute instead of (or in addition to) catalog order; decide the within-group ordering (alphabetical? a secondary manual order?)
+- [ ] Update the order-form's article picker component to actually render grouped sections (e.g. `<optgroup>`-equivalent), not just a flat sorted list
+- [ ] Decide how to handle articles with no attribute set (existing ones, until backfilled) — likely an "Other"/uncategorized group rather than erroring or silently hiding them
+- [ ] Once this lands, the catalog-array-position sort in `GET /api/public/articles` (and possibly `articlesCatalog.ts`'s role as an ordering source at all, vs. just a seed dataset) can be retired
