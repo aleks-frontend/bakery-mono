@@ -33,10 +33,12 @@ export function createCyclesClient(http: HttpClient): CyclesClient {
       http.request<NextCycleStartSuggestion>("/api/cycles/next-cycle-start-suggestion"),
     startSuggestion: () => http.request<CycleStartSuggestion>("/api/cycles/start-suggestion"),
     start: (input) => http.request<StartCycleResult>("/api/cycles", { method: "POST", body: input }),
-    close: (id, input) => http.request<Cycle>(`/api/cycles/${id}/close`, { method: "PATCH", body: input }),
-    reopen: (id) => http.request<Cycle>(`/api/cycles/${id}/reopen`, { method: "PATCH" }),
-    deliver: (id) => http.request<Cycle>(`/api/cycles/${id}/deliver`, { method: "PATCH" }),
-    undoDeliver: (id) => http.request<Cycle>(`/api/cycles/${id}/undo-deliver`, { method: "PATCH" }),
+    close: (id, input) =>
+      http.request<Cycle>(`/api/cycles/${encodeURIComponent(id)}/close`, { method: "PATCH", body: input }),
+    reopen: (id) => http.request<Cycle>(`/api/cycles/${encodeURIComponent(id)}/reopen`, { method: "PATCH" }),
+    deliver: (id) => http.request<Cycle>(`/api/cycles/${encodeURIComponent(id)}/deliver`, { method: "PATCH" }),
+    undoDeliver: (id) =>
+      http.request<Cycle>(`/api/cycles/${encodeURIComponent(id)}/undo-deliver`, { method: "PATCH" }),
   };
 }
 

@@ -13,8 +13,9 @@ export function createArticlesClient(http: HttpClient): ArticlesClient {
   return {
     list: () => http.request<ArticleWithAvailability[]>("/api/articles"),
     create: (input) => http.request<Article>("/api/articles", { method: "POST", body: input }),
-    update: (id, input) => http.request<Article>(`/api/articles/${id}`, { method: "PATCH", body: input }),
-    remove: (id) => http.request<void>(`/api/articles/${id}`, { method: "DELETE" }),
+    update: (id, input) =>
+      http.request<Article>(`/api/articles/${encodeURIComponent(id)}`, { method: "PATCH", body: input }),
+    remove: (id) => http.request<void>(`/api/articles/${encodeURIComponent(id)}`, { method: "DELETE" }),
   };
 }
 

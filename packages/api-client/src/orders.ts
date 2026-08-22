@@ -55,14 +55,15 @@ function buildQuery(params?: OrdersListParams): string {
 export function createOrdersClient(http: HttpClient): OrdersClient {
   return {
     list: (params) => http.request<OrderListResponse>(`/api/orders${buildQuery(params)}`),
-    get: (id) => http.request<Order>(`/api/orders/${id}`),
+    get: (id) => http.request<Order>(`/api/orders/${encodeURIComponent(id)}`),
     create: (input) => http.request<Order>("/api/orders", { method: "POST", body: input }),
-    update: (id, input) => http.request<Order>(`/api/orders/${id}`, { method: "PATCH", body: input }),
-    remove: (id) => http.request<void>(`/api/orders/${id}`, { method: "DELETE" }),
-    archive: (id) => http.request<Order>(`/api/orders/${id}/archive`, { method: "PATCH" }),
-    unarchive: (id) => http.request<Order>(`/api/orders/${id}/unarchive`, { method: "PATCH" }),
+    update: (id, input) =>
+      http.request<Order>(`/api/orders/${encodeURIComponent(id)}`, { method: "PATCH", body: input }),
+    remove: (id) => http.request<void>(`/api/orders/${encodeURIComponent(id)}`, { method: "DELETE" }),
+    archive: (id) => http.request<Order>(`/api/orders/${encodeURIComponent(id)}/archive`, { method: "PATCH" }),
+    unarchive: (id) => http.request<Order>(`/api/orders/${encodeURIComponent(id)}/unarchive`, { method: "PATCH" }),
     makeRepeating: (id) =>
-      http.request<RepeatingOrder>(`/api/orders/${id}/make-repeating`, { method: "POST" }),
+      http.request<RepeatingOrder>(`/api/orders/${encodeURIComponent(id)}/make-repeating`, { method: "POST" }),
   };
 }
 

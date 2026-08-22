@@ -13,11 +13,14 @@ export interface RepeatingOrdersClient {
 export function createRepeatingOrdersClient(http: HttpClient): RepeatingOrdersClient {
   return {
     list: () => http.request<RepeatingOrder[]>("/api/repeating-orders"),
-    get: (id) => http.request<RepeatingOrder>(`/api/repeating-orders/${id}`),
+    get: (id) => http.request<RepeatingOrder>(`/api/repeating-orders/${encodeURIComponent(id)}`),
     create: (input) => http.request<RepeatingOrder>("/api/repeating-orders", { method: "POST", body: input }),
     update: (id, input) =>
-      http.request<RepeatingOrder>(`/api/repeating-orders/${id}`, { method: "PATCH", body: input }),
-    remove: (id) => http.request<void>(`/api/repeating-orders/${id}`, { method: "DELETE" }),
+      http.request<RepeatingOrder>(`/api/repeating-orders/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: input,
+      }),
+    remove: (id) => http.request<void>(`/api/repeating-orders/${encodeURIComponent(id)}`, { method: "DELETE" }),
   };
 }
 
