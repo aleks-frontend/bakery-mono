@@ -77,7 +77,9 @@ ordersRouter.post("/", async (req, res) => {
     return;
   }
 
-  const priced = await priceAndValidateItems(cycleId, items);
+  // Manual orders skip the availability/capacity check — the baker entering
+  // this is physically the one baking it and can knowingly add an exception.
+  const priced = await priceAndValidateItems(cycleId, items, undefined, false);
   if (!priced.ok) {
     res.status(409).json({ error: "Some items are unavailable", details: priced.errors });
     return;
@@ -122,7 +124,7 @@ ordersRouter.patch("/:id", async (req, res) => {
     return;
   }
 
-  const priced = await priceAndValidateItems(existing.cycleId, items, existing.id);
+  const priced = await priceAndValidateItems(existing.cycleId, items, existing.id, false);
   if (!priced.ok) {
     res.status(409).json({ error: "Some items are unavailable", details: priced.errors });
     return;

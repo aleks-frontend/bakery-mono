@@ -22,11 +22,17 @@ export type PriceAndValidateResult =
  * remaining per-cycle capacity. `excludeOrderId` lets an order's own existing
  * items be excluded from the "already ordered" count when re-validating an
  * edit, so shrinking/keeping a quantity doesn't self-block against capacity.
+ *
+ * `enforceAvailability` (default true) gates the `available`/capacity check
+ * entirely — the public order form always enforces it, but a baker entering
+ * a manual order is physically the one baking it and can knowingly add an
+ * exception (an article marked unavailable, or one already at capacity).
  */
 export async function priceAndValidateItems(
   cycleId: string,
   requestedItems: { articleId: string; quantity: number }[],
   excludeOrderId?: string,
+  enforceAvailability = true,
 ): Promise<PriceAndValidateResult> {
   const mergedQuantities = new Map<string, number>();
   for (const item of requestedItems) {
@@ -48,16 +54,18 @@ export async function priceAndValidateItems(
     }
 
     const alreadyOrdered = orderedQty.get(articleId) ?? 0;
-    if (!computeAvailability(article, alreadyOrdered)) {
-      errors.push({ articleId, reason: "Article is not available" });
-      continue;
-    }
-
-    if (article.capacityPerCycle != null) {
-      const remaining = article.capacityPerCycle - alreadyOrdered;
-      if (quantity > remaining) {
-        errors.push({ articleId, reason: `Only ${Math.max(remaining, 0)} remaining this cycle` });
+    if (enforceAvailability) {
+      if (!computeAvailability(article, alreadyOrdered)) {
+        errors.push({ articleId, reason: "Article is not available" });
         continue;
+      }
+
+      if (article.capacityPerCycle != null) {
+        const remaining = article.capacityPerCycle - alreadyOrdered;
+        if (quantity > remaining) {
+          errors.push({ articleId, reason: `Only ${Math.max(remaining, 0)} remaining this cycle` });
+          continue;
+        }
       }
     }
 
