@@ -12,9 +12,9 @@ Full deployment write-up (Dockerfiles, Railway setup, migrations, the admin-pane
 - [ ] Verify emails, PDFs, dashboard numbers, and cycle transitions all behave correctly under real-ish use — emails verified live; PDFs/dashboard/cycle transitions not specifically re-verified since the most recent changes
 - [ ] Get baker sign-off on staging behavior — needs the baker's own confirmation, not something verifiable from a coding session
 - [x] Point production order-form and admin panel domains at the new backend — both real domains (`order.lisztrapszodia.in.rs`, `admin-panel.lisztrapszodia.in.rs`) added as Railway custom domains, DNS configured via Loopia, verified serving the correct build with valid TLS certs
-- [ ] Disable n8n webhooks the same day (hard cutover, no parallel-run period) — the order-form/admin-panel n8n webhooks were already retired back in Phase 13; the one remaining n8n dependency (the baker's Telegram notification workflow) has been replaced in code (see Phase 10 in the history file), but **the old n8n workflow itself still needs to be deactivated** once the new Telegram integration is confirmed working in production, or the baker will get duplicate notifications
+- [ ] Disable n8n webhooks the same day (hard cutover, no parallel-run period) — the order-form/admin-panel n8n webhooks were already retired back in Phase 13; the one remaining n8n dependency (the baker's Telegram notification workflow) is now fully confirmed working in production (see below), so **the old n8n workflow itself just needs to be deactivated** or the baker will get duplicate notifications
 - [x] Wire up the Loopia subdomain for production once confirmed stable — done, see above
-- [ ] Set `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` on Railway's backend service — local `.env` has the chat ID and a verified-working token, just not yet copied to production
+- [x] Set `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` on Railway's backend service — done; sent a real production test order, no send errors in Railway's logs (same fire-and-forget/log-only-on-failure pattern as email), test order cleaned up afterward via direct SQL
 
 ## Phase 15 — Responsive Header Navigation
 
@@ -62,17 +62,22 @@ Currently `apps/order-form/src/App.tsx` filters unavailable articles out entirel
 - [ ] Needs a decision on the public order-form UX: inline collapsed section vs. dedicated modal, and where in the article-picker flow the "show similar" suggestion appears relative to the sold-out item
 - [ ] Revisit and flesh out the rest of this phase's checklist when implementation actually starts
 
-## Phase 22 — Article Categories, Grouped Workshop List
+## Phase 22 — Article Categories: Order-Form Grouping/Sorting + Workshop List
 
-Reminder only, collected during a baker meeting — not yet implemented.
+**High priority**, per a follow-up baker meeting — scope expanded from the original ask. Blocked on the baker providing the actual category list/taxonomy; nothing here can start until that exists.
 
-Ask: give `Article` an optional category (e.g. "Bread", "Pastry", "Focaccia" — exact taxonomy TBD with the baker), and use it to order/group the Workshop List PDF by category instead of today's flat first-seen-order listing.
+Original ask: give `Article` an optional category (e.g. "Bread", "Pastry", "Focaccia" — exact taxonomy TBD with the baker), and use it to order/group the Workshop List PDF by category instead of today's flat first-seen-order listing.
 
-- [ ] Schema change: add an optional `category` field to `Article` — needs a migration; decide whether it's a free-text string or a fixed enum/lookup table. Worth deciding alongside Phase 26's `flourType` and Phase 27's `isSpecial` at the same time rather than three separate migrations, since they may end up related or at least should be reviewed together for how they interact on the Articles admin UI
+**Expanded ask (confirmed with the baker directly, supersedes this phase's own earlier "out of scope unless asked" line)**: category also drives ordering *and* grouping of the order-form's article picker — this is now the primary motivation, not just a nice-to-have alongside the Workshop List grouping.
+
+- [ ] Get the actual category list from the baker — hard blocker, nothing below can be scoped precisely (schema choice, UI, taxonomy for "uncategorized" articles) until this exists
+- [ ] Schema change: add an optional `category` field to `Article` — needs a migration; decide whether it's a free-text string or a fixed enum/lookup table
 - [ ] Add category as a field in the Articles admin UI (`ArticleModal`/`ArticlesTable`)
+- [ ] Update `GET /api/public/articles` to sort/group by category instead of (or in addition to) the current catalog-array-position stopgap; decide within-group ordering
+- [ ] Update the order-form's article picker component to render grouped sections (e.g. `<optgroup>`-equivalent), not just a flat sorted list
 - [ ] Update `WorkshopListPdf.tsx`'s `summarizeWorkshopArticlesFromOrders()` to sort/section by `Article.category` first, then by name within each category
-- [ ] Decide how to handle articles with no category set — likely an "Uncategorized" section at the end rather than silently interleaving them
-- [ ] Decide whether category should also surface anywhere else (e.g. grouping the public order-form's article picker, or the admin Articles list) — out of scope unless the baker asks, but worth a deliberate call
+- [ ] Decide how to handle articles with no category set — likely an "Uncategorized" section at the end rather than silently interleaving them, for both the order-form picker and the Workshop List
+- **Overlaps with Phase 26** (`flourType`, proposed for the exact same order-form grouping/sorting mechanism, before this baker conversation happened) — worth revisiting whether Phase 26 is now redundant/should merge into this phase once the baker's category list exists, rather than building two separate grouping attributes for the same UI. Flagged, not resolved.
 
 ## Phase 23 — Show Remark in Order-Form Confirmation
 
@@ -100,6 +105,8 @@ Problem: `RequireAuth` (`apps/admin-panel/src/components/RequireAuth.tsx`) redir
 ## Phase 26 — Flour-Type Attribute for Ordering/Grouping the Order-Form Article Picker
 
 Reminder only, follow-up to the catalog-order sort stopgap — not yet implemented.
+
+**Likely superseded by Phase 22**: after this phase was written, the baker separately confirmed `category` (Phase 22's field, originally scoped just for the Workshop List PDF) should be the one used for order-form grouping/sorting — the exact same mechanism this phase proposes under a different name/taxonomy. Revisit whether this phase is still needed once Phase 22 ships, rather than building two grouping attributes for the same picker.
 
 Current state: `GET /api/public/articles` sorts by each article's position in the seed catalog array (`src/lib/articlesCatalog.ts`) rather than alphabetically, so the order-form's article picker matches the old Google Sheet's ordering customers are used to. That works today but is inherently fragile — the order is implicit in a source file's array position, invisible in the admin panel, and any article added later through the UI (not the seed catalog) just falls to the end with no way to place it elsewhere.
 
