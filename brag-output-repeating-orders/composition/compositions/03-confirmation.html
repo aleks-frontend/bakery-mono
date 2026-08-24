@@ -1,0 +1,154 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        @font-face {
+          font-family: "Fraunces";
+          font-style: normal;
+          font-weight: 100 900;
+          font-display: block;
+          src: url("assets/fonts/fraunces-latin.woff2") format("woff2");
+          unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+            U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+            U+FEFF, U+FFFD;
+        }
+        @font-face {
+          font-family: "Work Sans";
+          font-style: normal;
+          font-weight: 100 900;
+          font-display: block;
+          src: url("assets/fonts/worksans-latin.woff2") format("woff2");
+          unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+            U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+            U+FEFF, U+FFFD;
+        }
+
+        #root-03 {
+          position: absolute;
+          inset: 0;
+          background: #fbf3e7;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: "Work Sans", sans-serif;
+          text-align: center;
+        }
+        .card {
+          width: 880px;
+          background: #fffefb;
+          border-radius: 32px;
+          padding: 64px 68px;
+          box-shadow: 0 1px 2px rgba(54, 38, 23, 0.06), 0 24px 60px -20px rgba(54, 38, 23, 0.22);
+        }
+        .badge {
+          margin: 0 auto 22px;
+          width: 76px;
+          height: 76px;
+          border-radius: 50%;
+          background: #e9ede4;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          opacity: 0;
+        }
+        .badge svg {
+          width: 38px;
+          height: 38px;
+        }
+        .badge path {
+          fill: none;
+          stroke: #7c8b6f;
+          stroke-width: 3;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+        h1 {
+          margin: 0 0 10px;
+          font-family: "Fraunces", serif;
+          font-weight: 600;
+          font-size: 46px;
+          color: #362617;
+          opacity: 0;
+        }
+        .thanks {
+          margin: 0;
+          font-size: 25px;
+          color: #776959;
+          opacity: 0;
+        }
+        .payoff {
+          margin: 26px auto 0;
+          max-width: 560px;
+          font-size: 26px;
+          font-weight: 600;
+          color: #9d5a2f;
+          opacity: 0;
+        }
+      </style>
+
+      <div
+        id="root-03"
+        data-composition-id="03-confirmation"
+        data-width="1920"
+        data-height="1080"
+        data-duration="4.5"
+      >
+        <div class="card">
+          <div class="badge" id="badge">
+            <svg viewBox="0 0 20 20">
+              <path d="M3 10.5 L8 15 L17 4" />
+            </svg>
+          </div>
+          <h1 id="heading">Porud&#382;bina primljena!</h1>
+          <p class="thanks" id="thanks">Hvala, Ana &mdash; va&scaron;a porud&#382;bina je primljena.</p>
+          <p class="payoff" id="payoff">
+            Ova porud&#382;bina &#263;e se automatski ponavljati svake nedelje.
+          </p>
+        </div>
+      </div>
+
+      <script>
+        window.__timelines = window.__timelines || {};
+        const tl = gsap.timeline({ paused: true });
+
+        // Badge pop — beat-locked: 7.79s host time (exact beat in the vol-10 grid).
+        tl.fromTo(
+          "#badge",
+          { scale: 0, opacity: 0 },
+          { scale: 1, opacity: 1, duration: 0.36, ease: "power3.out" },
+          0.19,
+        );
+
+        tl.fromTo(
+          "#heading",
+          { opacity: 0, y: 14 },
+          { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" },
+          0.55,
+        );
+        tl.fromTo(
+          "#thanks",
+          { opacity: 0, y: 12 },
+          { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" },
+          0.85,
+        );
+
+        // The payoff line — the whole point of this video — arrives on its own beat,
+        // held long enough to read twice. Beat-locked: 10.38s host time.
+        tl.fromTo(
+          "#payoff",
+          { opacity: 0, y: 12 },
+          { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" },
+          2.78,
+        );
+
+        // Holds to the end of the scene.
+
+        window.__timelines["03-confirmation"] = tl;
+      </script>
+    </template>
+  </body>
+</html>

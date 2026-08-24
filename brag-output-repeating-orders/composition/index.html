@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="sr" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #362617;
+      }
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+      }
+      /* Sub-comp slots stretch to fill the root; z-index controls crossfade paint order
+         (later scenes must paint OVER earlier ones during an overlap). */
+      #root > div[data-composition-src] {
+        position: absolute;
+        inset: 0;
+      }
+      #slot-01 {
+        z-index: 1;
+      }
+      #slot-02 {
+        z-index: 2;
+      }
+      #slot-03 {
+        z-index: 3;
+      }
+      #slot-04 {
+        z-index: 4;
+      }
+      #slot-05 {
+        z-index: 5;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-width="1920"
+      data-height="1080"
+      data-duration="18.8"
+    >
+      <!-- Scene 1 — The question (0.0 - 3.0) -->
+      <div
+        id="slot-01"
+        data-composition-id="01-hook"
+        data-composition-src="compositions/01-hook.html"
+        data-start="0"
+        data-duration="3"
+        data-track-index="1"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+
+      <!-- Scene 2 — Check the box (2.6 - 7.6, crossfades in over the last 0.4s of Scene 1) -->
+      <div
+        id="slot-02"
+        data-composition-id="02-checkbox"
+        data-composition-src="compositions/02-checkbox.html"
+        data-start="2.6"
+        data-duration="5"
+        data-track-index="2"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+
+      <!-- Scene 3 — The confirmation (7.6 - 12.1, hard cut from Scene 2) -->
+      <div
+        id="slot-03"
+        data-composition-id="03-confirmation"
+        data-composition-src="compositions/03-confirmation.html"
+        data-start="7.6"
+        data-duration="4.5"
+        data-track-index="1"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+
+      <!-- Scene 4 — Order once, relax (11.7 - 15.7, crossfades in over the last 0.4s of Scene 3) -->
+      <div
+        id="slot-04"
+        data-composition-id="04-weekly"
+        data-composition-src="compositions/04-weekly.html"
+        data-start="11.7"
+        data-duration="4"
+        data-track-index="2"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+
+      <!-- Scene 5 — A word from the bakery (15.3 - 18.8, crossfades in over the last 0.4s of Scene 4) -->
+      <div
+        id="slot-05"
+        data-composition-id="05-outro"
+        data-composition-src="compositions/05-outro.html"
+        data-start="15.3"
+        data-duration="3.5"
+        data-track-index="1"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+
+      <!-- Music bed — continuous at root, survives every scene cut. Warm/restrained:
+           fades in under Scene 1, holds low, fades to silence under the Scene 5 card. -->
+      <audio
+        id="bgm"
+        class="clip"
+        src="assets/music/happy-beats-business-moves-vol-10-by-ende-dot-app.mp3"
+        data-start="0"
+        data-duration="18.8"
+        data-track-index="10"
+        data-volume="0.32"
+        data-automation="{&quot;version&quot;:1,&quot;lanes&quot;:[{&quot;target&quot;:&quot;volume&quot;,&quot;points&quot;:[{&quot;t&quot;:0,&quot;v&quot;:0},{&quot;t&quot;:1.0,&quot;v&quot;:0.32},{&quot;t&quot;:15.3,&quot;v&quot;:0.32},{&quot;t&quot;:18.8,&quot;v&quot;:0}]}]}"
+      ></audio>
+
+      <!-- SFX — sparse, warm, tied to the real interactions in Scenes 2-4.
+           Checkbox tick: beat-locked to 4.10s. Submit tap: beat-locked to 5.74s. -->
+      <audio
+        id="sfx-checkbox"
+        class="clip"
+        src="assets/sfx-interface/click_005.ogg"
+        data-start="4.10"
+        data-duration="0.03"
+        data-track-index="11"
+        data-volume="0.45"
+      ></audio>
+      <audio
+        id="sfx-submit"
+        class="clip"
+        src="assets/sfx-interface/switch_007.ogg"
+        data-start="5.74"
+        data-duration="0.614"
+        data-track-index="11"
+        data-volume="0.5"
+      ></audio>
+
+      <!-- Confirmation badge pop: beat-locked to 7.79s. -->
+      <audio
+        id="sfx-badge"
+        class="clip"
+        src="assets/sfx-interface/click_002.ogg"
+        data-start="7.79"
+        data-duration="0.03"
+        data-track-index="12"
+        data-volume="0.45"
+      ></audio>
+
+      <!-- Weekly-marker pops — natural readable spacing, close to (not locked on) the beat
+           grid: three short labels, but each also carries a loaf glyph + checkmark, so a
+           strict beat-snap would still rush the read. -->
+      <audio
+        id="sfx-week-1"
+        class="clip"
+        src="assets/sfx-interface/click_003.ogg"
+        data-start="12.1"
+        data-duration="0.03"
+        data-track-index="13"
+        data-volume="0.4"
+      ></audio>
+      <audio
+        id="sfx-week-2"
+        class="clip"
+        src="assets/sfx-interface/click_003.ogg"
+        data-start="12.7"
+        data-duration="0.03"
+        data-track-index="13"
+        data-volume="0.4"
+      ></audio>
+      <audio
+        id="sfx-week-3"
+        class="clip"
+        src="assets/sfx-interface/click_003.ogg"
+        data-start="13.3"
+        data-duration="0.03"
+        data-track-index="13"
+        data-volume="0.4"
+      ></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      // Root timeline is intentionally near-empty — all animation lives in the sub-comps.
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>
