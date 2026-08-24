@@ -11,7 +11,7 @@ const savedLang =
 const initialLang =
   savedLang === 'en' || savedLang === 'sr' || savedLang === 'hu'
     ? savedLang
-    : 'en'
+    : 'sr'
 
 i18n.use(initReactI18next).init({
   resources: {
@@ -20,7 +20,7 @@ i18n.use(initReactI18next).init({
     hu: { translation: hu },
   },
   lng: initialLang,
-  fallbackLng: 'en',
+  fallbackLng: 'sr',
   nsSeparator: false,
   interpolation: {
     escapeValue: false,
