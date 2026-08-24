@@ -17,6 +17,7 @@ import { OrderSummaryModal } from "./OrderSummaryModal";
 
 interface OrderFormProps {
   articles: PublicArticle[];
+  outOfStockArticles: PublicArticle[];
   acceptingOrders: boolean;
 }
 
@@ -27,7 +28,7 @@ const defaultItem = (
   quantity: 1,
 });
 
-export function OrderForm({ articles, acceptingOrders }: OrderFormProps) {
+export function OrderForm({ articles, outOfStockArticles, acceptingOrders }: OrderFormProps) {
   const { t } = useTranslation();
   const { load: loadPersistedCustomer, save: savePersistedCustomer } =
     usePersistedCustomer();
@@ -216,6 +217,7 @@ export function OrderForm({ articles, acceptingOrders }: OrderFormProps) {
         <OrderItems
           control={control}
           articles={articles}
+          outOfStockArticles={outOfStockArticles}
           onUpdate={onItemsUpdate}
         />
 

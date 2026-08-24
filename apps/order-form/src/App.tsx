@@ -10,7 +10,9 @@ function App() {
   const { data, isLoading, isError } = useArticlesQuery();
 
   const acceptingOrders = data?.acceptingOrders ?? false;
-  const articles = (data?.articles ?? []).filter((a) => a.available);
+  const allArticles = data?.articles ?? [];
+  const articles = allArticles.filter((a) => a.available);
+  const outOfStockArticles = allArticles.filter((a) => !a.available);
 
   return (
     <>
@@ -50,7 +52,11 @@ function App() {
           <Spinner />
         </div>
       ) : !isError ? (
-        <OrderForm articles={articles} acceptingOrders={acceptingOrders} />
+        <OrderForm
+          articles={articles}
+          outOfStockArticles={outOfStockArticles}
+          acceptingOrders={acceptingOrders}
+        />
       ) : null}
     </>
   );
