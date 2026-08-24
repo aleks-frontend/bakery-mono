@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+  </head>
+  <body>
+    <template>
+      <style>
+        @font-face {
+          font-family: "Fraunces";
+          font-style: normal;
+          font-weight: 100 900;
+          font-display: block;
+          src: url("assets/fonts/fraunces-latin.woff2") format("woff2");
+          unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+            U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+            U+FEFF, U+FFFD;
+        }
+        @font-face {
+          font-family: "Fraunces";
+          font-style: normal;
+          font-weight: 100 900;
+          font-display: block;
+          src: url("assets/fonts/fraunces-latin-ext.woff2") format("woff2");
+          unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+            U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+            U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+        }
+
+        #root {
+          position: absolute;
+          inset: 0;
+          background: #fbf3e7;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .hook-line {
+          max-width: 1500px;
+          text-align: center;
+          font-family: "Fraunces", serif;
+          font-weight: 600;
+          font-size: 96px;
+          line-height: 1.15;
+          color: #362617;
+        }
+        .word {
+          display: inline-block;
+          opacity: 0;
+        }
+        .word + .word {
+          margin-left: 0.28em;
+        }
+      </style>
+
+      <div data-hf-id="hf-v9e7" id="root" data-composition-id="01-hook" data-width="1920" data-height="1080" data-duration="3">
+        <div data-hf-id="hf-fxt6" class="hook-line" id="hook-line">
+          <span data-hf-id="hf-z884" class="word" id="w1">Wait…</span>
+          <span data-hf-id="hf-e9sz" class="word" id="w2">where</span>
+          <span data-hf-id="hf-35c2" class="word" id="w3">did</span>
+          <span data-hf-id="hf-50nh" class="word" id="w4">the</span>
+          <span data-hf-id="hf-7el1" class="word" id="w5">rye</span>
+          <span data-hf-id="hf-mk7m" class="word" id="w6">bread</span>
+          <span data-hf-id="hf-week" class="word" id="w7">go?</span>
+        </div>
+      </div>
+
+      <script>
+        window.__timelines = window.__timelines || {};
+        const tl = gsap.timeline({ paused: true });
+
+        // waterfall-entry: whip in from below, one direction, overlapping cascade.
+        // "Wait..." is the anchor (heaviest); "go?" is the light climax word.
+        const F = 1 / 60;
+        let t = 0.25;
+
+        tl.set("#w1", { opacity: 1, y: 70 }, t);
+        tl.to("#w1", { y: 0, duration: 0.18, ease: "power4.out" }, t);
+        t = t + 0.18 - 2 * F;
+
+        tl.set("#w2", { opacity: 1, y: 46 }, t);
+        tl.to("#w2", { y: 0, duration: 0.15, ease: "power4.out" }, t);
+        t = t + 0.15 - F;
+
+        tl.set("#w3", { opacity: 1, y: 40 }, t);
+        tl.to("#w3", { y: 0, duration: 0.14, ease: "power4.out" }, t);
+        t = t + 0.14 - F;
+
+        tl.set("#w4", { opacity: 1, y: 40 }, t);
+        tl.to("#w4", { y: 0, duration: 0.13, ease: "power4.out" }, t);
+        t = t + 0.13 - F;
+
+        tl.set("#w5", { opacity: 1, y: 44 }, t);
+        tl.to("#w5", { y: 0, duration: 0.14, ease: "power4.out" }, t);
+        t = t + 0.14 - F;
+
+        tl.set("#w6", { opacity: 1, y: 46 }, t);
+        tl.to("#w6", { y: 0, duration: 0.15, ease: "power4.out" }, t);
+        t = t + 0.15 - F;
+
+        // Climax word: extra travel, still lands clean (no overshoot — calm tone).
+        tl.set("#w7", { opacity: 1, y: 64 }, t);
+        tl.to("#w7", { y: 0, duration: 0.18, ease: "power4.out" }, t);
+
+        // Holds static for the rest of the 3s scene — no exit (the crossfade into
+        // Scene 2 handles the handoff; exit animations are reserved for the final scene).
+
+        window.__timelines["01-hook"] = tl;
+      </script>
+    </template>
+  </body>
+</html>
