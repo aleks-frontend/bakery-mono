@@ -255,3 +255,13 @@ User-reported: no matter which single app changed (backend, admin panel, or orde
   - `bakery-mono-admin-panel` → `apps/admin-panel/**`, `packages/schemas/**`, `packages/api-client/**`
   - `bakery-mono-order-form` → `apps/order-form/**`, `packages/schemas/**`, `packages/api-client/**`
 - [x] Verified live: pushed a change scoped to a single file in `apps/order-form` only. Backend and admin-panel's new deployment records both showed status `SKIPPED`; order-form built and deployed normally (`SUCCESS`). Test change reverted afterward in a follow-up commit.
+
+## Phase 23 — Show Remark in Order-Form Confirmation
+
+User-reported gap: `summary.remark` is collected on the order form and correctly sent to the backend, but it's never actually displayed back to the customer anywhere in the confirmation flow.
+
+- [x] `OrderSummaryModal.tsx` (the pre-submit "Confirm Order" modal) — added a `summary.remark` conditional block right after the existing `location` line, same `<strong>{t("Remark:")}</strong>` pattern.
+- [x] `OrderForm.tsx`'s post-submit success panel — added a `lastSubmitted.remark` paragraph right after the existing repeat-order note.
+- [x] Added `"Remark:"` to all three locale files (`en`/`sr`/`hu`).
+- [x] **Found and fixed an unrelated pre-existing bug while browser-verifying this change**: none of the `<strong>{t("Label:")}</strong>` prefixes were rendering in `OrderSummaryModal` — not just the new "Remark:" but also the pre-existing "Customer:" and "Location:". Root cause: i18next's default `nsSeparator` is `":"`, and its "does this look like natural language" heuristic exempts a key from namespace-splitting only if the key contains a space (or other punctuation from `[' ', ',', '?', '!', ';']`). Single-word colon-suffixed keys like `"Customer:"` don't contain a space, so they got misparsed as `namespace:key` — splitting into namespace `"Customer"` + an empty key, which resolves to `""`. Multi-word keys like `"Order Items:"` do contain a space, so they were exempt and rendered fine — which is why only some labels were silently broken. Fixed by setting `nsSeparator: false` in `apps/order-form/src/i18n/index.ts`'s `i18n.init()` call, since the app only ever uses a single `translation` namespace and never needs `ns:key` syntax. This bug predates this phase entirely (the "Customer:"/"Location:" labels were already broken before this change) but had gone unnoticed.
+- [x] Verified live in-browser: filled out the order form, confirmed both the pre-submit modal and post-submit success panel show the remark with a correctly-rendered "Remark:" label; test order submitted then deleted from the dev DB afterward.

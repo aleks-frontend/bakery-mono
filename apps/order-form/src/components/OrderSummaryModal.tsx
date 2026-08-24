@@ -90,6 +90,13 @@ export function OrderSummaryModal({
                 <strong>{t("Location:")}</strong> {t(summary.location)}
               </>
             ) : null}
+            {summary.remark ? (
+              <>
+                <br />
+                <br />
+                <strong>{t("Remark:")}</strong> {summary.remark}
+              </>
+            ) : null}
           </div>
           <div className="mb-4">
             <strong>{t("Order Items:")}</strong>

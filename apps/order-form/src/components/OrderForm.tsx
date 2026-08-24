@@ -171,6 +171,11 @@ export function OrderForm({ articles, acceptingOrders }: OrderFormProps) {
             {t("This order will repeat automatically every week.")}
           </p>
         )}
+        {lastSubmitted.remark && (
+          <p className="mt-2 text-sm text-bakery-text/70">
+            <strong>{t("Remark:")}</strong> {lastSubmitted.remark}
+          </p>
+        )}
         <div className="text-left mt-5 border-t border-bakery-border pt-4">
           {lastSubmitted.items.map((item, i) => (
             <div key={i} className="py-1.5 flex justify-between text-sm">

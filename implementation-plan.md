@@ -79,13 +79,6 @@ Original ask: give `Article` an optional category (e.g. "Bread", "Pastry", "Foca
 - [ ] Decide how to handle articles with no category set — likely an "Uncategorized" section at the end rather than silently interleaving them, for both the order-form picker and the Workshop List
 - **Overlaps with Phase 26** (`flourType`, proposed for the exact same order-form grouping/sorting mechanism, before this baker conversation happened) — worth revisiting whether Phase 26 is now redundant/should merge into this phase once the baker's category list exists, rather than building two separate grouping attributes for the same UI. Flagged, not resolved.
 
-## Phase 23 — Show Remark in Order-Form Confirmation
-
-User-reported gap: `summary.remark` is collected on the order form and correctly sent to the backend, but it's never actually displayed back to the customer anywhere in the confirmation flow.
-
-- [ ] `OrderSummaryModal.tsx` (the pre-submit "Confirm Order" modal) — shows customer info, location, items, total, and a repeat note, but no remark line
-- [ ] `OrderForm.tsx`'s post-submit success panel — same gap
-
 ## Phase 24 — Sentry.io Error Tracking
 
 All three apps are wired up and verified — backend confirmed live with a real thrown error, both frontends confirmed to have the real DSN baked into their production bundles (after fixing a Dockerfile `ARG` gap that had silently left them running with `dsn: undefined` for a while). One verification step still outstanding:
