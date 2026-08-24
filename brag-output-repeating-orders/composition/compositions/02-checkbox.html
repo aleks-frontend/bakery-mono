@@ -51,8 +51,79 @@
           width: 1080px;
           background: #fffefb;
           border-radius: 32px;
-          padding: 60px 64px;
+          padding: 56px 64px 60px;
           box-shadow: 0 1px 2px rgba(54, 38, 23, 0.06), 0 24px 60px -20px rgba(54, 38, 23, 0.22);
+        }
+        /* Context above the checkbox — the rest of the real order form, muted so the
+           eye still lands on the checkbox, but present so customers can see exactly
+           where in the form this option lives (bottom, after items + total). */
+        .context {
+          opacity: 0.55;
+        }
+        .products-heading {
+          margin: 0 0 18px;
+          font-family: "Fraunces", serif;
+          font-weight: 600;
+          font-size: 26px;
+          color: #362617;
+        }
+        .item-row-mini {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 10px;
+          background: #f5ebda;
+          border: 1px solid #e6d5be;
+          border-radius: 14px;
+        }
+        .item-pill-mini {
+          flex: 1;
+          background: #fffefb;
+          border: 1px solid #e6d5be;
+          border-radius: 10px;
+          padding: 14px 18px;
+          font-size: 20px;
+          color: #362617;
+        }
+        .qty-box-mini {
+          width: 48px;
+          height: 48px;
+          background: #fffefb;
+          border: 1px solid #e6d5be;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 20px;
+          color: #362617;
+        }
+        .total-row {
+          margin-top: 22px;
+          padding-top: 22px;
+          border-top: 1px solid #e6d5be;
+          display: flex;
+          align-items: baseline;
+          justify-content: flex-end;
+          gap: 10px;
+        }
+        .total-row .label {
+          font-size: 19px;
+          color: #776959;
+        }
+        .total-row .value {
+          font-family: "Fraunces", serif;
+          font-weight: 600;
+          font-size: 30px;
+          color: #362617;
+        }
+        .total-row .unit {
+          font-size: 18px;
+          color: #776959;
+        }
+        .divider {
+          margin: 30px 0;
+          border: none;
+          border-top: 1px solid #e6d5be;
         }
         .repeat-row {
           display: flex;
@@ -133,6 +204,19 @@
 
       <div id="root-02" data-composition-id="02-checkbox" data-width="1920" data-height="1080" data-duration="5">
         <div class="card">
+          <div class="context">
+            <h3 class="products-heading">Naru&#269;eni proizvodi</h3>
+            <div class="item-row-mini">
+              <div class="item-pill-mini">Beli hleb - Feh&eacute;r keny&eacute;r - 500g (200 RSD)</div>
+              <div class="qty-box-mini">1</div>
+            </div>
+            <div class="total-row">
+              <span class="label">Ukupna cena:</span>
+              <span class="value">200</span>
+              <span class="unit">RSD</span>
+            </div>
+          </div>
+          <hr class="divider" />
           <div class="repeat-row">
             <div class="checkbox" id="checkbox">
               <svg viewBox="0 0 20 20">
