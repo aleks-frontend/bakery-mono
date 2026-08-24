@@ -41,7 +41,7 @@ export function OutOfStockArticles({ articles }: OutOfStockArticlesProps) {
           </div>
           {infoOpen && (
             <p className="mt-1.5 text-xs text-bakery-text/60">
-              {t("These may become available again in a future cycle.")}{" "}
+              {t("These may become available again.")}{" "}
               {t("Want to know when, or looking for something similar?")}{" "}
               <a
                 href={`mailto:${ORDERS_EMAIL}`}
