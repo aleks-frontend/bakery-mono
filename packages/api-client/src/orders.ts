@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type {
   CreateOrderInput,
   Order,
@@ -70,7 +70,18 @@ export function createOrdersClient(http: HttpClient): OrdersClient {
 export const ordersQueryKey = (params?: OrdersListParams) => ["orders", params ?? {}] as const;
 
 export function useOrdersQuery(client: OrdersClient, params?: OrdersListParams) {
-  return useQuery({ queryKey: ordersQueryKey(params), queryFn: () => client.list(params) });
+  return useQuery({
+    queryKey: ordersQueryKey(params),
+    queryFn: () => client.list(params),
+    // search/filter/sort/page are all baked into the query key, so every
+    // keystroke in the search box produces a brand-new key. Without this,
+    // each new key starts from `status: 'pending'` (isLoading: true) until
+    // it resolves — and OrdersPage early-returns a loading screen while
+    // isLoading is true, unmounting (and thus un-focusing) the search input
+    // on every keystroke. Keeping the previous page's data visible during
+    // the refetch keeps isLoading false after the first load.
+    placeholderData: keepPreviousData,
+  });
 }
 
 export const orderQueryKey = (id?: string) => ["order", id ?? ""] as const;
