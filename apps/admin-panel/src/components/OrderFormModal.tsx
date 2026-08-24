@@ -21,12 +21,14 @@ import { useTranslation } from "react-i18next"
 import { Loader2 } from "lucide-react"
 import { useArticlesQuery } from "@/hooks/useArticlesQuery"
 import { useCurrentCycleQuery } from "@/hooks/useCurrentCycleQuery"
+import { useCyclesQuery } from "@/hooks/useCyclesQuery"
 import { useCreateOrderMutation } from "@/hooks/useCreateOrderMutation"
 import { useUpdateOrderMutation } from "@/hooks/useUpdateOrderMutation"
 import { useMakeRepeatingMutation } from "@/hooks/useMakeRepeatingMutation"
 import { cn } from "@/lib/utils"
 import type { Order } from "@bakery/api-client"
 import { OrderItemsEditor, type OrderItemState } from "@/components/OrderItemsEditor"
+import { CycleStatusBadge } from "@/components/CycleStatusBadge"
 
 interface OrderFormModalProps {
   open: boolean
@@ -52,7 +54,14 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
   const { t } = useTranslation()
   const isEdit = order !== undefined
   const { data: articlesData, isLoading: articlesLoading } = useArticlesQuery()
+  // The baker regularly adds manual orders after a cycle has closed (backfilling
+  // a phone/in-person order into the cycle that's still being fulfilled), so
+  // this isn't limited to the currently-OPEN cycle: fall back to the most
+  // recent cycle overall (list is already sorted deliveryDate desc) when none
+  // is open. Only genuinely blocked when no cycle exists at all yet.
   const { data: currentCycle, isLoading: cycleLoading } = useCurrentCycleQuery()
+  const { data: cyclesData, isLoading: cyclesLoading } = useCyclesQuery()
+  const targetCycle = currentCycle ?? cyclesData?.[0] ?? null
   const createMutation = useCreateOrderMutation()
   const updateMutation = useUpdateOrderMutation()
   const makeRepeatingMutation = useMakeRepeatingMutation()
@@ -133,7 +142,7 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
       if (!item.articleId) newErrors[`item_${i}_article`] = t("Required")
       if (item.quantity < 1) newErrors[`item_${i}_qty`] = t("Required")
     })
-    if (!isEdit && !currentCycle) newErrors.cycle = t("No cycle is currently open")
+    if (!isEdit && !targetCycle) newErrors.cycle = t("No cycle exists yet")
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -157,7 +166,7 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
       // the confirmation email defaults to Serbian rather than the schema's
       // English fallback — there's no per-order language picker in this form.
       createMutation.mutate(
-        { ...fields, cycleId: currentCycle!.id, locale: "sr" },
+        { ...fields, cycleId: targetCycle!.id, locale: "sr" },
         {
           onSuccess: (createdOrder) => {
             if (repeat) makeRepeatingMutation.mutate(createdOrder.id)
@@ -168,7 +177,8 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
     }
   }
 
-  const isLoadingDeps = articlesLoading || (!isEdit && cycleLoading)
+  const isLoadingDeps = articlesLoading || (!isEdit && (cycleLoading || cyclesLoading))
+  const cycleDepsLoading = cycleLoading || cyclesLoading
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -181,8 +191,15 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
         </DialogHeader>
 
         <form autoComplete="off" onSubmit={(e) => e.preventDefault()} className="space-y-6 py-2">
-          {!isEdit && !cycleLoading && !currentCycle && (
-            <p className="text-sm text-destructive">{t("No cycle is currently open")}</p>
+          {!isEdit && !cycleDepsLoading && !targetCycle && (
+            <p className="text-sm text-destructive">{t("No cycle exists yet")}</p>
+          )}
+          {!isEdit && targetCycle && (
+            <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              {t("Adding to cycle:")}
+              <span className="font-medium text-foreground">{targetCycle.label}</span>
+              <CycleStatusBadge status={targetCycle.status} />
+            </p>
           )}
 
           {/* Customer info */}
@@ -297,7 +314,7 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
           <Button
             type="button"
             size="lg"
-            disabled={mutation.isPending || (!isEdit && !currentCycle)}
+            disabled={mutation.isPending || (!isEdit && !targetCycle)}
             onClick={handleSubmit}
             className="w-full font-semibold text-base"
           >
