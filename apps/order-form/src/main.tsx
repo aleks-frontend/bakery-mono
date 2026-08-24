@@ -1,4 +1,3 @@
-// Watch Paths test: this comment is a no-op change scoped to order-form only.
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import * as Sentry from "@sentry/react";
