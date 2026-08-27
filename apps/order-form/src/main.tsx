@@ -12,6 +12,15 @@ import "./index.css";
 Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN,
   environment: import.meta.env.MODE,
+  ignoreErrors: [
+    // Android in-app browsers (Instagram/Facebook/etc.) inject their own native
+    // bridge/telemetry script into any page they open. When that wrapper tears
+    // down its WebView mid-navigation, its own bridge throws this — nothing our
+    // code did, and the page itself keeps working. Seen once via a customer
+    // opening the order link from an in-app browser; not actionable on our end.
+    /Error invoking postMessage: Java object is gone/,
+    /sendDebugNative/,
+  ],
 });
 
 Modal.setAppElement("#root");
