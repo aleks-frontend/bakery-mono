@@ -30,15 +30,20 @@ const emptyForm = {
   holidayMessageHu: "",
 }
 
+// nextCycleStartDate is a calendar date, not a real-world instant, so it's
+// always read/written against UTC fields — never the browser's local
+// timezone. See the identical helpers in StartCycleModal.tsx for why: local
+// time here made the picked date silently shift by a day depending on where
+// it was later rendered.
 function toDateInputValue(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, "0")
-  const d = String(date.getDate()).padStart(2, "0")
+  const y = date.getUTCFullYear()
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0")
+  const d = String(date.getUTCDate()).padStart(2, "0")
   return `${y}-${m}-${d}`
 }
 
 function fromDateInputValue(value: string): Date {
-  return new Date(`${value}T00:00:00`)
+  return new Date(`${value}T00:00:00Z`)
 }
 
 export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: CloseCycleModalProps) {

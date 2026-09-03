@@ -12,6 +12,16 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Lock, PackageCheck, Plus, Undo2, Unlock } from "lucide-react"
 
+// deliveryDate / nextCycleStartDate are calendar dates picked via a date
+// input (see StartCycleModal/CloseCycleModal), stored as UTC midnight —
+// format them against UTC too, not the viewer's local timezone, so they
+// always show the day that was actually picked. (createdAt is a real
+// instant, not a calendar date, so it's left on toLocaleDateString()'s
+// default local-timezone formatting.)
+function formatCalendarDate(date: Date): string {
+  return date.toLocaleDateString(undefined, { timeZone: "UTC" })
+}
+
 export function CyclesPage() {
   const { t } = useTranslation()
   const { data: cycles = [], isLoading, error } = useCyclesQuery()
@@ -88,12 +98,12 @@ export function CyclesPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">{t("Delivery Date")}</p>
-                <p className="text-sm">{latestCycle.deliveryDate.toLocaleDateString()}</p>
+                <p className="text-sm">{formatCalendarDate(latestCycle.deliveryDate)}</p>
               </div>
               {latestCycle.nextCycleStartDate && (
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">{t("Next order window opens")}</p>
-                  <p className="text-sm">{latestCycle.nextCycleStartDate.toLocaleDateString()}</p>
+                  <p className="text-sm">{formatCalendarDate(latestCycle.nextCycleStartDate)}</p>
                 </div>
               )}
             </div>
@@ -187,7 +197,7 @@ export function CyclesPage() {
                   <td className="px-4 py-2">
                     <CycleStatusBadge status={cycle.status} />
                   </td>
-                  <td className="px-4 py-2">{cycle.deliveryDate.toLocaleDateString()}</td>
+                  <td className="px-4 py-2">{formatCalendarDate(cycle.deliveryDate)}</td>
                 </tr>
               ))}
             </tbody>

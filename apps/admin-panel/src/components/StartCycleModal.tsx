@@ -25,15 +25,22 @@ const emptyForm = {
   deliveryDate: "",
 }
 
+// deliveryDate is a calendar date, not a real-world instant, so it's always
+// read/written against UTC fields — never the browser's local timezone. Using
+// local time here made the picked date round-trip differently depending on
+// where it was read: an admin in Europe/Belgrade picking "Sep 2" would send
+// 2026-09-01T22:00:00Z, which then rendered as "Sep 1" wherever it was later
+// formatted in UTC (e.g. the backend's order-confirmation email, which runs
+// in a UTC container) — a day off from what was actually picked.
 function toDateInputValue(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, "0")
-  const d = String(date.getDate()).padStart(2, "0")
+  const y = date.getUTCFullYear()
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0")
+  const d = String(date.getUTCDate()).padStart(2, "0")
   return `${y}-${m}-${d}`
 }
 
 function fromDateInputValue(value: string): Date {
-  return new Date(`${value}T00:00:00`)
+  return new Date(`${value}T00:00:00Z`)
 }
 
 export function StartCycleModal({ open, onOpenChange }: StartCycleModalProps) {

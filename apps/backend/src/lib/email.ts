@@ -162,7 +162,14 @@ function buildCustomerConfirmationEmail(
   locale: OrderLocale,
 ): { subject: string; html: string } {
   const t = COPY[locale];
-  const deliveryDate = order.cycle.deliveryDate.toLocaleDateString(DATE_LOCALE[locale]);
+  // deliveryDate is a calendar date picked by the admin (see StartCycleModal),
+  // stored as UTC midnight — format it against UTC explicitly. Without this,
+  // toLocaleDateString falls back to the server process's local timezone,
+  // which in production is a container with no TZ set (UTC). That rendered a
+  // date picked as e.g. Sep 2 in Belgrade (UTC+2, stored as Sep 1 22:00 UTC)
+  // as "Sep 1" in the confirmation email — a day earlier than what was
+  // actually picked and shown correctly in the admin panel's own UI.
+  const deliveryDate = order.cycle.deliveryDate.toLocaleDateString(DATE_LOCALE[locale], { timeZone: "UTC" });
 
   const metaRows = [
     labelValueRow(t.deliveryLabel, deliveryDate),
