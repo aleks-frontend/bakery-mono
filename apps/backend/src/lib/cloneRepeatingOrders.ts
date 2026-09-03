@@ -1,6 +1,7 @@
 import { prisma } from "./prisma.js";
 import { priceAndValidateItems, type ItemValidationError } from "./orderPricing.js";
 import { orderInclude } from "../routes/orders.js";
+import { sendOrderNotifications } from "./email.js";
 
 export interface CloneResult {
   repeatingOrderId: string;
@@ -44,6 +45,11 @@ export async function cloneRepeatingOrdersIntoCycle(cycleId: string): Promise<Cl
       },
       include: orderInclude,
     });
+
+    // RepeatingOrder has no stored locale (it's never captured at creation), so
+    // cloned confirmation emails default to Serbian — the order form's own default
+    // locale and the bakery's primary customer language.
+    void sendOrderNotifications(order, "sr");
 
     results.push({ repeatingOrderId: repeatingOrder.id, orderId: order.id });
   }
