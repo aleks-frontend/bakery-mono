@@ -93,6 +93,7 @@
   "Unarchive selected": "Vrati odabrane iz arhive",
   "Show archived": "Prikaži arhivirane",
   "Only with remarks": "Samo sa napomenom",
+  "Only returning orders": "Samo ponavljajuće porudžbine",
   "Has a remark": "Ima napomenu",
   "Confirm Archive": "Potvrdi arhiviranje",
   "This will archive {{entity}} {{id}}.": "Ovo će arhivirati {{entity}} {{id}}.",

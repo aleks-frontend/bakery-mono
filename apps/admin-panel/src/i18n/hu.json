@@ -93,6 +93,7 @@
   "Unarchive selected": "Kijelöltek visszaállítása",
   "Show archived": "Archivált mutatása",
   "Only with remarks": "Csak megjegyzéssel",
+  "Only returning orders": "Csak visszatérő rendelések",
   "Has a remark": "Van megjegyzése",
   "Confirm Archive": "Archiválás megerősítése",
   "This will archive {{entity}} {{id}}.": "Ez archiválja a(z) {{id}} {{entity}}.",

@@ -93,6 +93,7 @@
   "Unarchive selected": "Unarchive selected",
   "Show archived": "Show archived",
   "Only with remarks": "Only with remarks",
+  "Only returning orders": "Only returning orders",
   "Has a remark": "Has a remark",
   "Confirm Archive": "Confirm Archive",
   "This will archive {{entity}} {{id}}.": "This will archive {{entity}} {{id}}.",

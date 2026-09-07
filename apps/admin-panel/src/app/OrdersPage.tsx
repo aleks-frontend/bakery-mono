@@ -56,6 +56,7 @@ export function OrdersPage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
   const [showArchived, setShowArchived] = useState(false)
   const [hasRemarkFilter, setHasRemarkFilter] = useState(false)
+  const [hasRepeatingOrderFilter, setHasRepeatingOrderFilter] = useState(false)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<OrderPageSize>(25)
 
@@ -67,6 +68,7 @@ export function OrdersPage() {
     sortDir,
     archived: showArchived,
     hasRemark: hasRemarkFilter || undefined,
+    hasRepeatingOrder: hasRepeatingOrderFilter || undefined,
     page,
     pageSize,
   }
@@ -103,7 +105,17 @@ export function OrdersPage() {
   useEffect(() => {
     setPage(1)
     setRowSelection({})
-  }, [searchQuery, statusFilter, cycleFilter, sortBy, sortDir, showArchived, hasRemarkFilter, pageSize])
+  }, [
+    searchQuery,
+    statusFilter,
+    cycleFilter,
+    sortBy,
+    sortDir,
+    showArchived,
+    hasRemarkFilter,
+    hasRepeatingOrderFilter,
+    pageSize,
+  ])
 
   const selectedIds = useMemo(
     () => Object.keys(rowSelection).filter((id) => rowSelection[id]),
@@ -400,6 +412,16 @@ export function OrdersPage() {
             {t("Only with remarks")}
           </label>
           <Switch id="has-remark-toggle" checked={hasRemarkFilter} onCheckedChange={setHasRemarkFilter} />
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <label htmlFor="has-repeating-order-toggle" className="text-sm font-medium cursor-pointer">
+            {t("Only returning orders")}
+          </label>
+          <Switch
+            id="has-repeating-order-toggle"
+            checked={hasRepeatingOrderFilter}
+            onCheckedChange={setHasRepeatingOrderFilter}
+          />
         </div>
       </div>
 
