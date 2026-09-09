@@ -42,4 +42,9 @@ WORKDIR /workspace/apps/backend
 # Railway injects its own PORT at runtime; src/index.ts already reads
 # process.env.PORT, falling back to 3001 for other environments.
 EXPOSE 3001
-CMD ["node", "dist/index.js"]
+# Apply any pending migrations before starting the server - otherwise a
+# deploy that adds a migration (e.g. a new model) ships code that expects a
+# table Railway's Postgres doesn't have yet. `prisma` is a devDependency, so
+# it's not on PATH here; call the hoisted root node_modules/.bin binary
+# directly rather than relying on cwd-relative resolution.
+CMD ["sh", "-c", "/workspace/node_modules/.bin/prisma migrate deploy && node dist/index.js"]
