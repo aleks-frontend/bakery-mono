@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { useTranslation } from "react-i18next"
-import { Loader2, Plus, X } from "lucide-react"
+import { AlertTriangle, Loader2, Plus, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { ArticleWithAvailability } from "@bakery/api-client"
 
@@ -58,11 +58,18 @@ export function OrderItemsEditor({
                 {articles.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.name} ({a.price} {t("RSD")})
+                    {!a.availableNow ? ` — ${t("not available")}` : ""}
                   </option>
                 ))}
               </select>
               {errors[`item_${i}_article`] && (
                 <p className="text-xs text-destructive mt-0.5">{errors[`item_${i}_article`]}</p>
+              )}
+              {article && !article.availableNow && (
+                <p className="flex items-center gap-1 text-xs text-warning mt-0.5">
+                  <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden />
+                  {t("Not available - order with caution")}
+                </p>
               )}
             </div>
             <div className="w-20">

@@ -9,7 +9,7 @@ export const repeatingOrdersRouter = Router();
 
 repeatingOrdersRouter.use(requireAuth);
 
-const repeatingOrderInclude = {
+export const repeatingOrderInclude = {
   items: { include: { article: true } },
 } satisfies PrismaTypes.RepeatingOrderInclude;
 

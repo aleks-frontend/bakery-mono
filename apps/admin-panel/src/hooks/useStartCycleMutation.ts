@@ -21,7 +21,11 @@ export function useStartCycleMutation() {
 
       const failed = result.repeatingOrdersCloned.filter((r) => r.errors)
       if (failed.length > 0) {
-        toast.error(t("{{count}} repeating order(s) could not be cloned into the new cycle", { count: failed.length }))
+        toast.error(
+          t("{{count}} repeating order(s) couldn't be added — review them on the Cycles page", {
+            count: failed.length,
+          })
+        )
       }
     },
   })

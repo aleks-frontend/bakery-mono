@@ -8,3 +8,4 @@ export * from "./cycle.js";
 export * from "./dashboard.js";
 export * from "./order.js";
 export * from "./repeatingOrder.js";
+export * from "./repeatingOrderCloneFailure.js";

@@ -27,6 +27,9 @@ export async function cloneRepeatingOrdersIntoCycle(cycleId: string): Promise<Cl
     );
 
     if (!priced.ok) {
+      await prisma.repeatingOrderCloneFailure.create({
+        data: { cycleId, repeatingOrderId: repeatingOrder.id, errors: priced.errors },
+      });
       results.push({ repeatingOrderId: repeatingOrder.id, errors: priced.errors });
       continue;
     }

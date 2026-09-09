@@ -44,6 +44,7 @@ model Cycle {
   updatedAt          DateTime    @updatedAt
 
   orders Order[]
+  cloneFailures RepeatingOrderCloneFailure[]
 
   @@map("cycles")
 }
@@ -104,6 +105,7 @@ model RepeatingOrder {
 
   items  RepeatingOrderItem[]
   orders Order[]
+  cloneFailures RepeatingOrderCloneFailure[]
 
   @@map("repeating_orders")
 }
@@ -119,6 +121,29 @@ model RepeatingOrderItem {
   article   Article @relation(fields: [articleId], references: [id])
 
   @@map("repeating_order_items")
+}
+
+// Recorded whenever cloneRepeatingOrdersIntoCycle skips a RepeatingOrder
+// because one of its articles failed availability/capacity validation at
+// cycle-start time. `errors` mirrors priceAndValidateItems' ItemValidationError[]
+// shape. Left unresolved (resolvedAt null) until the baker either creates the
+// missing order manually from the review UI (resolvedOrderId set) — there is
+// no "dismiss" action, so every failure is expected to end up resolved.
+model RepeatingOrderCloneFailure {
+  id         String    @id @default(cuid())
+  errors     Json
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+  resolvedOrderId String?
+
+  cycleId String
+  cycle   Cycle  @relation(fields: [cycleId], references: [id])
+
+  repeatingOrderId String
+  repeatingOrder   RepeatingOrder @relation(fields: [repeatingOrderId], references: [id], onDelete: Cascade)
+
+  @@index([cycleId])
+  @@map("repeating_order_clone_failures")
 }
 
 model User {

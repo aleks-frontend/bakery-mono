@@ -34,6 +34,20 @@ interface OrderFormModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   order?: Order
+  // Used to recreate an order manually after its RepeatingOrder failed to
+  // clone into the current cycle (see FailedRepeatingOrdersModal) — seeds the
+  // form with the repeating order's data and, on success, links the new order
+  // back to it via repeatingOrderId so it still counts as a returning order.
+  prefill?: {
+    recipient: string
+    phone: string
+    email: string | null
+    location: string
+    remark: string | null
+    items: { articleId: string; quantity: number }[]
+  }
+  repeatingOrderId?: string
+  onCreated?: (order: Order) => void
 }
 
 type ItemState = OrderItemState
@@ -50,7 +64,7 @@ const emptyForm = {
 
 const emptyItem: ItemState = { articleId: "", quantity: 1 }
 
-export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProps) {
+export function OrderFormModal({ open, onOpenChange, order, prefill, repeatingOrderId, onCreated }: OrderFormModalProps) {
   const { t } = useTranslation()
   const isEdit = order !== undefined
   const { data: articlesData, isLoading: articlesLoading } = useArticlesQuery()
@@ -76,16 +90,17 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
 
   useEffect(() => {
     if (open) {
+      const source = order ?? prefill
       setForm({
-        recipient: order?.recipient ?? "",
-        phone: order?.phone ?? "",
-        email: order?.email ?? "",
-        location: order?.location ?? "",
-        remark: order?.remark ?? "",
+        recipient: source?.recipient ?? "",
+        phone: source?.phone ?? "",
+        email: source?.email ?? "",
+        location: source?.location ?? "",
+        remark: source?.remark ?? "",
       })
       setItems(
-        order?.items?.length
-          ? order.items.map((item) => ({ articleId: item.articleId, quantity: item.quantity }))
+        source?.items?.length
+          ? source.items.map((item) => ({ articleId: item.articleId, quantity: item.quantity }))
           : [{ articleId: articles[0]?.id ?? "", quantity: 1 }]
       )
       setRepeat(false)
@@ -95,7 +110,7 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
     // when the modal opens. Including it would re-run this reset whenever the
     // article list changes while the modal is open, wiping user-entered items.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, order])
+  }, [open, order, prefill])
 
   // Covers the case where the article list finishes loading after the modal
   // is already open and an item still has no selection.
@@ -166,10 +181,11 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
       // the confirmation email defaults to Serbian rather than the schema's
       // English fallback — there's no per-order language picker in this form.
       createMutation.mutate(
-        { ...fields, cycleId: targetCycle!.id, locale: "sr" },
+        { ...fields, cycleId: targetCycle!.id, locale: "sr", ...(repeatingOrderId ? { repeatingOrderId } : {}) },
         {
           onSuccess: (createdOrder) => {
-            if (repeat) makeRepeatingMutation.mutate(createdOrder.id)
+            if (repeat && !repeatingOrderId) makeRepeatingMutation.mutate(createdOrder.id)
+            onCreated?.(createdOrder)
             onOpenChange(false)
           },
         }
@@ -199,6 +215,11 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
               {t("Adding to cycle:")}
               <span className="font-medium text-foreground">{targetCycle.label}</span>
               <CycleStatusBadge status={targetCycle.status} />
+            </p>
+          )}
+          {repeatingOrderId && (
+            <p className="text-sm text-muted-foreground">
+              {t("Recreating this repeating order — review the items below before submitting.")}
             </p>
           )}
 
@@ -289,7 +310,7 @@ export function OrderFormModal({ open, onOpenChange, order }: OrderFormModalProp
             <span>{totalPrice} {t("RSD")}</span>
           </div>
 
-          {!isEdit && (
+          {!isEdit && !repeatingOrderId && (
             <>
               <Separator />
               <label className="flex items-start gap-3 cursor-pointer">

@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import toast from "react-hot-toast"
 import { useTranslation } from "react-i18next"
-import type { OrderStatus, UpdateOrderInput } from "@bakery/api-client"
+import type { HttpError, OrderStatus, UpdateOrderInput } from "@bakery/api-client"
 import { ordersClient } from "@/lib/apiClient"
+import { describeItemValidationError, isItemValidationErrors } from "@/lib/itemValidationErrors"
 
 export function useUpdateOrderMutation() {
   const queryClient = useQueryClient()
@@ -13,7 +14,10 @@ export function useUpdateOrderMutation() {
       toast.promise(ordersClient.update(id, input), {
         loading: t("Saving changes..."),
         success: t("Order updated"),
-        error: (err) => err.message || t("Failed to update order"),
+        error: (err: HttpError) =>
+          isItemValidationErrors(err.details)
+            ? err.details.map((d) => describeItemValidationError(t, d)).join("; ")
+            : err.message || t("Failed to update order"),
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
   })

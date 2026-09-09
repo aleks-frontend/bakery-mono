@@ -1,11 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
-import type { CloseCycleInput, Cycle, CycleStartSuggestion, NextCycleStartSuggestion, StartCycleInput } from "@bakery/schemas";
+import type {
+  CloseCycleInput,
+  Cycle,
+  CycleStartSuggestion,
+  ItemValidationError,
+  NextCycleStartSuggestion,
+  RepeatingOrderCloneFailure,
+  StartCycleInput,
+} from "@bakery/schemas";
 import type { HttpClient } from "./http.js";
 
 export interface RepeatingOrderCloneResult {
   repeatingOrderId: string;
   orderId?: string;
-  errors?: { articleId: string; reason: string }[];
+  errors?: ItemValidationError[];
 }
 
 export interface StartCycleResult {
@@ -23,6 +31,8 @@ export interface CyclesClient {
   reopen(id: string): Promise<Cycle>;
   deliver(id: string): Promise<Cycle>;
   undoDeliver(id: string): Promise<Cycle>;
+  cloneFailures(cycleId: string): Promise<RepeatingOrderCloneFailure[]>;
+  resolveCloneFailure(cycleId: string, failureId: string, orderId: string): Promise<RepeatingOrderCloneFailure>;
 }
 
 export function createCyclesClient(http: HttpClient): CyclesClient {
@@ -39,7 +49,22 @@ export function createCyclesClient(http: HttpClient): CyclesClient {
     deliver: (id) => http.request<Cycle>(`/api/cycles/${encodeURIComponent(id)}/deliver`, { method: "PATCH" }),
     undoDeliver: (id) =>
       http.request<Cycle>(`/api/cycles/${encodeURIComponent(id)}/undo-deliver`, { method: "PATCH" }),
+    cloneFailures: (cycleId) =>
+      http.request<RepeatingOrderCloneFailure[]>(`/api/cycles/${encodeURIComponent(cycleId)}/clone-failures`),
+    resolveCloneFailure: (cycleId, failureId, orderId) =>
+      http.request<RepeatingOrderCloneFailure>(
+        `/api/cycles/${encodeURIComponent(cycleId)}/clone-failures/${encodeURIComponent(failureId)}/resolve`,
+        { method: "POST", body: { orderId } },
+      ),
   };
+}
+
+export function useCloneFailuresQuery(client: CyclesClient, cycleId: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: ["cycles", "clone-failures", cycleId],
+    queryFn: () => client.cloneFailures(cycleId as string),
+    enabled: enabled && !!cycleId,
+  });
 }
 
 export function useCurrentCycleQuery(client: CyclesClient) {

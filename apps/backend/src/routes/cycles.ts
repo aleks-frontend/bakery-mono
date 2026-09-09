@@ -1,10 +1,11 @@
 import { Router } from "express";
-import { startCycleSchema, closeCycleSchema } from "@bakery/schemas";
+import { startCycleSchema, closeCycleSchema, resolveCloneFailureSchema } from "@bakery/schemas";
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { suggestNextCycleStartDate, suggestCycleStart } from "../lib/cycleDates.js";
 import { cloneRepeatingOrdersIntoCycle } from "../lib/cloneRepeatingOrders.js";
+import { repeatingOrderInclude } from "./repeatingOrders.js";
 
 export const cyclesRouter = Router();
 
@@ -16,8 +17,13 @@ cyclesRouter.get("/current", async (_req, res) => {
 });
 
 cyclesRouter.get("/", async (_req, res) => {
-  const cycles = await prisma.cycle.findMany({ orderBy: { deliveryDate: "desc" } });
-  res.json(cycles);
+  const cycles = await prisma.cycle.findMany({
+    orderBy: { deliveryDate: "desc" },
+    include: { _count: { select: { cloneFailures: { where: { resolvedAt: null } } } } },
+  });
+  res.json(
+    cycles.map(({ _count, ...cycle }) => ({ ...cycle, pendingCloneFailureCount: _count.cloneFailures })),
+  );
 });
 
 cyclesRouter.get("/next-cycle-start-suggestion", async (_req, res) => {
@@ -143,6 +149,52 @@ cyclesRouter.patch("/:id/deliver", async (req, res) => {
 
 // Undoes an accidental "Mark Delivered" click, for the same reasons /reopen
 // undoes "Close Ordering" — see the TODO above on /deliver.
+// Pending (unresolved) RepeatingOrderCloneFailures for a cycle, joined with
+// the RepeatingOrder they came from — the admin panel's "Review failed
+// repeating orders" modal uses this to pre-fill a manual order per row.
+cyclesRouter.get("/:id/clone-failures", async (req, res) => {
+  const failures = await prisma.repeatingOrderCloneFailure.findMany({
+    where: { cycleId: req.params.id, resolvedAt: null },
+    include: { repeatingOrder: { include: repeatingOrderInclude } },
+    orderBy: { createdAt: "asc" },
+  });
+  res.json(failures);
+});
+
+// Marks a clone failure resolved once the baker has manually created the
+// missing order — the order itself is created via the normal POST /api/orders
+// flow (see OrderFormModal), this just links it back to the failure record so
+// it drops out of the pending review list.
+cyclesRouter.post("/:id/clone-failures/:failureId/resolve", async (req, res) => {
+  const parsed = resolveCloneFailureSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
+  const failure = await prisma.repeatingOrderCloneFailure.findUnique({ where: { id: req.params.failureId } });
+  if (!failure || failure.cycleId !== req.params.id) {
+    res.status(404).json({ error: "Clone failure not found" });
+    return;
+  }
+  if (failure.resolvedAt) {
+    res.status(409).json({ error: "Clone failure already resolved" });
+    return;
+  }
+
+  const order = await prisma.order.findUnique({ where: { id: parsed.data.orderId } });
+  if (!order || order.cycleId !== failure.cycleId || order.repeatingOrderId !== failure.repeatingOrderId) {
+    res.status(400).json({ error: "Order does not match this cycle and repeating order" });
+    return;
+  }
+
+  const resolved = await prisma.repeatingOrderCloneFailure.update({
+    where: { id: failure.id },
+    data: { resolvedAt: new Date(), resolvedOrderId: order.id },
+  });
+  res.json(resolved);
+});
+
 cyclesRouter.patch("/:id/undo-deliver", async (req, res) => {
   try {
     const cycle = await prisma.cycle.update({

@@ -1,3 +1,4 @@
+import type { ItemValidationError } from "@bakery/schemas";
 import { prisma } from "./prisma.js";
 import { computeAvailability, getOrderedQuantitiesByArticle } from "./availability.js";
 
@@ -7,10 +8,7 @@ export interface PricedOrderItem {
   unitPrice: number;
 }
 
-export interface ItemValidationError {
-  articleId: string;
-  reason: string;
-}
+export type { ItemValidationError };
 
 export type PriceAndValidateResult =
   | { ok: true; items: PricedOrderItem[]; totalPrice: number }
@@ -49,21 +47,21 @@ export async function priceAndValidateItems(
   for (const [articleId, quantity] of mergedQuantities) {
     const article = articleById.get(articleId);
     if (!article) {
-      errors.push({ articleId, reason: "Article not found" });
+      errors.push({ articleId, code: "NOT_FOUND" });
       continue;
     }
 
     const alreadyOrdered = orderedQty.get(articleId) ?? 0;
     if (enforceAvailability) {
       if (!computeAvailability(article, alreadyOrdered)) {
-        errors.push({ articleId, reason: "Article is not available" });
+        errors.push({ articleId, code: "UNAVAILABLE" });
         continue;
       }
 
       if (article.capacityPerCycle != null) {
         const remaining = article.capacityPerCycle - alreadyOrdered;
         if (quantity > remaining) {
-          errors.push({ articleId, reason: `Only ${Math.max(remaining, 0)} remaining this cycle` });
+          errors.push({ articleId, code: "CAPACITY_EXCEEDED", remaining: Math.max(remaining, 0) });
           continue;
         }
       }

@@ -8,9 +8,11 @@ import { StartCycleModal } from "@/components/StartCycleModal"
 import { CloseCycleModal } from "@/components/CloseCycleModal"
 import { ConfirmActionDialog } from "@/components/ConfirmActionDialog"
 import { CycleStatusBadge } from "@/components/CycleStatusBadge"
+import { FailedRepeatingOrdersModal } from "@/components/FailedRepeatingOrdersModal"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Lock, PackageCheck, Plus, Undo2, Unlock } from "lucide-react"
+import { Tooltip } from "@/components/ui/tooltip"
+import { AlertTriangle, Lock, PackageCheck, Plus, Undo2, Unlock } from "lucide-react"
 
 // deliveryDate / nextCycleStartDate are calendar dates picked via a date
 // input (see StartCycleModal/CloseCycleModal), stored as UTC midnight —
@@ -32,6 +34,7 @@ export function CyclesPage() {
   const [isStartOpen, setIsStartOpen] = useState(false)
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false)
   const [isDeliverConfirmOpen, setIsDeliverConfirmOpen] = useState(false)
+  const [isFailuresOpen, setIsFailuresOpen] = useState(false)
 
   // Cycles progress OPEN -> CLOSED -> COMPLETED one at a time, so the most
   // recent one (by delivery date) always tells us what action is next.
@@ -84,7 +87,17 @@ export function CyclesPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">{t("Label")}</p>
-                <p className="text-sm">{latestCycle.label}</p>
+                <p className="flex items-center gap-1.5 text-sm">
+                  {latestCycle.label}
+                  {!!latestCycle.pendingCloneFailureCount && (
+                    <Tooltip
+                      trigger={<AlertTriangle className="h-3.5 w-3.5 shrink-0 text-destructive" aria-hidden />}
+                      content={t("{{count}} repeating order(s) couldn't be added to this cycle", {
+                        count: latestCycle.pendingCloneFailureCount,
+                      })}
+                    />
+                  )}
+                </p>
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">{t("Status")}</p>
@@ -134,6 +147,14 @@ export function CyclesPage() {
             <Separator />
 
             <div className="flex gap-2">
+              {!!latestCycle.pendingCloneFailureCount && (
+                <Button variant="outline" onClick={() => setIsFailuresOpen(true)}>
+                  <AlertTriangle className="mr-2 h-4 w-4 text-destructive" />
+                  {t("Review failed repeating orders ({{count}})", {
+                    count: latestCycle.pendingCloneFailureCount,
+                  })}
+                </Button>
+              )}
               {latestCycle.status === "COMPLETED" && (
                 <>
                   <Button onClick={() => setIsStartOpen(true)}>
@@ -228,6 +249,11 @@ export function CyclesPage() {
             onConfirm={() =>
               deliverMutation.mutate(latestCycle.id, { onSuccess: () => setIsDeliverConfirmOpen(false) })
             }
+          />
+          <FailedRepeatingOrdersModal
+            open={isFailuresOpen}
+            onOpenChange={setIsFailuresOpen}
+            cycleId={latestCycle.id}
           />
         </>
       )}

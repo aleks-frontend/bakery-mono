@@ -14,6 +14,9 @@ export const cycleSchema = z.object({
   holidayMessageHu: z.string().nullable(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
+  // Only populated by GET /api/cycles (the list used for the Current Cycle
+  // card's failure badge) — other cycle-returning endpoints omit it.
+  pendingCloneFailureCount: z.number().int().optional(),
 });
 export type Cycle = z.infer<typeof cycleSchema>;
 

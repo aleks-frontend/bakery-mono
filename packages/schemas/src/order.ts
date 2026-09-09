@@ -59,6 +59,11 @@ export const createOrderSchema = z.object({
   cycleId: z.string().min(1),
   items: z.array(orderItemInputSchema).min(1),
   locale: orderLocaleSchema.default("en"),
+  // Set when this order recreates one that failed to clone from a
+  // RepeatingOrder at cycle-start time (see the "Review failed repeating
+  // orders" flow) — links it back the same way make-repeating does in
+  // reverse, so it still counts as a "returning order".
+  repeatingOrderId: z.string().min(1).optional(),
 });
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 
@@ -122,6 +127,17 @@ export const orderListQuerySchema = z.object({
     .transform((v) => v === "true"),
 });
 export type OrderListQuery = z.infer<typeof orderListQuerySchema>;
+
+// Reason an item failed priceAndValidateItems (backend) — surfaced both in
+// the 409 `details` for manual/public order creation and in
+// RepeatingOrderCloneFailure.errors. Kept as a code (not a free-text string)
+// so the admin panel can translate it instead of showing raw English.
+export const itemValidationErrorSchema = z.object({
+  articleId: z.string(),
+  code: z.enum(["NOT_FOUND", "UNAVAILABLE", "CAPACITY_EXCEEDED"]),
+  remaining: z.number().int().optional(),
+});
+export type ItemValidationError = z.infer<typeof itemValidationErrorSchema>;
 
 export const orderListResponseSchema = z.object({
   data: z.array(orderSchema),
