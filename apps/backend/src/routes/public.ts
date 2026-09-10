@@ -33,6 +33,7 @@ publicRouter.get("/articles", async (_req, res) => {
       name: article.name,
       price: article.price,
       available: computeAvailability(article, orderedQty.get(article.id) ?? 0),
+      isSeasonal: article.isSeasonal,
     })),
     acceptingOrders: currentCycle != null,
     reopenDate: currentCycle ? null : (latestCycle?.nextCycleStartDate ?? null),

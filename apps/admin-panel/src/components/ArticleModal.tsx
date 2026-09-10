@@ -33,6 +33,7 @@ export function ArticleModal({ open, onOpenChange, article }: ArticleModalProps)
 
   const [form, setForm] = useState(emptyForm)
   const [available, setAvailable] = useState(true)
+  const [isSeasonal, setIsSeasonal] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
@@ -43,6 +44,7 @@ export function ArticleModal({ open, onOpenChange, article }: ArticleModalProps)
         capacityPerCycle: article?.capacityPerCycle != null ? String(article.capacityPerCycle) : "",
       })
       setAvailable(article?.available ?? true)
+      setIsSeasonal(article?.isSeasonal ?? false)
       setErrors({})
     }
   }, [open, article])
@@ -76,6 +78,7 @@ export function ArticleModal({ open, onOpenChange, article }: ArticleModalProps)
       name: form.name.trim(),
       price: parseFloat(form.price),
       available,
+      isSeasonal,
       capacityPerCycle,
     }
 
@@ -148,6 +151,16 @@ export function ArticleModal({ open, onOpenChange, article }: ArticleModalProps)
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium">{t("Available")}</label>
             <Switch checked={available} onCheckedChange={setAvailable} />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-sm font-medium">{t("Seasonal")}</label>
+              <p className="text-xs text-muted-foreground">
+                {t("Unavailable by default — the baker opts it into individual cycles from the Start Cycle screen.")}
+              </p>
+            </div>
+            <Switch checked={isSeasonal} onCheckedChange={setIsSeasonal} />
           </div>
         </form>
 

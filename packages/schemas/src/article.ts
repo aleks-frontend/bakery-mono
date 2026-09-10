@@ -5,6 +5,7 @@ export const articleSchema = z.object({
   name: z.string(),
   price: z.number().int().positive(),
   available: z.boolean(),
+  isSeasonal: z.boolean(),
   capacityPerCycle: z.number().int().positive().nullable(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
@@ -20,6 +21,7 @@ export const createArticleSchema = z.object({
   name: z.string().min(1),
   price: z.number().int().positive(),
   available: z.boolean().default(true),
+  isSeasonal: z.boolean().default(false),
   capacityPerCycle: z.number().int().positive().nullable().optional(),
 });
 export type CreateArticleInput = z.infer<typeof createArticleSchema>;
@@ -32,6 +34,7 @@ export const publicArticleSchema = z.object({
   name: z.string(),
   price: z.number().int().positive(),
   available: z.boolean(),
+  isSeasonal: z.boolean(),
 });
 export type PublicArticle = z.infer<typeof publicArticleSchema>;
 

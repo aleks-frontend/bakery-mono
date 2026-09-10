@@ -15,6 +15,7 @@ model Article {
   name             String
   price            Int
   available        Boolean  @default(true)
+  isSeasonal       Boolean  @default(false)
   capacityPerCycle Int?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

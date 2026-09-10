@@ -59,6 +59,7 @@ export function OutOfStockArticles({ articles }: OutOfStockArticlesProps) {
                 className="rounded-full border border-bakery-border bg-white/60 px-2.5 py-1 text-xs text-bakery-text/60"
               >
                 {article.name}
+                {article.isSeasonal ? ` (${t("Seasonal")})` : ""}
               </span>
             ))}
           </div>

@@ -115,6 +115,12 @@ export function OrderSummaryModal({
           {summary.repeat && (
             <div className="mt-4 text-sm bg-bakery-highlight-soft border border-bakery-highlight rounded-lg px-3 py-2.5 text-bakery-text">
               {t("This order will repeat automatically every week until you ask us to stop.")}
+              {summary.hasSeasonalItem && (
+                <>
+                  {" "}
+                  {t("It contains a seasonal item, which might not be available in future cycles.")}
+                </>
+              )}
             </div>
           )}
         </div>

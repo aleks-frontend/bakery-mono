@@ -89,6 +89,7 @@ export function OrderForm({ articles, outOfStockArticles, acceptingOrders }: Ord
         quantity,
         unitPrice,
         total,
+        isSeasonal: article?.isSeasonal ?? false,
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -105,6 +106,8 @@ export function OrderForm({ articles, outOfStockArticles, acceptingOrders }: Ord
     [itemDetails],
   );
 
+  const hasSeasonalItem = itemDetails.some((item) => item.isSeasonal);
+
   const buildSummary = (values: OrderFormValues): OrderSummary => ({
     recipient: values.recipient,
     phone: values.phone,
@@ -114,6 +117,7 @@ export function OrderForm({ articles, outOfStockArticles, acceptingOrders }: Ord
     repeat: values.repeat,
     items: itemDetails,
     totalPrice,
+    hasSeasonalItem,
   });
 
   const onSubmit = (values: OrderFormValues) => {
@@ -250,6 +254,12 @@ export function OrderForm({ articles, outOfStockArticles, acceptingOrders }: Ord
             </span>
           </span>
         </label>
+
+        {formValues.repeat && hasSeasonalItem && (
+          <div className="mt-3 text-sm bg-bakery-highlight-soft border border-bakery-highlight rounded-lg px-3 py-2.5 text-bakery-text">
+            {t("Your order contains a seasonal item, which might not be available in future cycles — repeating orders are not guaranteed to include it every week.")}
+          </div>
+        )}
 
         <button
           type="submit"

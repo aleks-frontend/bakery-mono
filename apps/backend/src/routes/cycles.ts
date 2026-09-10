@@ -52,15 +52,28 @@ cyclesRouter.post("/", async (req, res) => {
     return;
   }
 
+  const { seasonalArticleIds, ...cycleFields } = parsed.data;
+
   let cycle;
   try {
-    cycle = await prisma.cycle.create({ data: parsed.data });
+    cycle = await prisma.cycle.create({ data: cycleFields });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       res.status(409).json({ error: "A cycle with this label already exists" });
       return;
     }
     throw error;
+  }
+
+  // Seasonal articles default to unavailable every cycle — the baker opts
+  // specific ones back in when starting the next cycle, rather than an
+  // on/off state silently carrying over from the previous one.
+  await prisma.article.updateMany({ where: { isSeasonal: true }, data: { available: false } });
+  if (seasonalArticleIds.length > 0) {
+    await prisma.article.updateMany({
+      where: { id: { in: seasonalArticleIds }, isSeasonal: true },
+      data: { available: true },
+    });
   }
 
   const repeatingOrdersCloned = await cloneRepeatingOrdersIntoCycle(cycle.id);

@@ -18,6 +18,7 @@ export interface OrderSummaryItem {
   quantity: number
   unitPrice: number
   total: number
+  isSeasonal: boolean
 }
 
 export interface OrderSummary {
@@ -29,4 +30,5 @@ export interface OrderSummary {
   repeat: boolean
   items: OrderSummaryItem[]
   totalPrice: number
+  hasSeasonalItem: boolean
 }

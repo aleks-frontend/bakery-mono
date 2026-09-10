@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
 import { useStartCycleSuggestionQuery } from "@/hooks/useStartCycleSuggestionQuery"
 import { useStartCycleMutation } from "@/hooks/useStartCycleMutation"
+import { useArticlesQuery } from "@/hooks/useArticlesQuery"
 
 interface StartCycleModalProps {
   open: boolean
@@ -46,10 +47,14 @@ function fromDateInputValue(value: string): Date {
 export function StartCycleModal({ open, onOpenChange }: StartCycleModalProps) {
   const { t } = useTranslation()
   const { data: suggestion, isLoading: suggestionLoading } = useStartCycleSuggestionQuery(open)
+  const { data: articles } = useArticlesQuery()
   const startMutation = useStartCycleMutation()
 
   const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [selectedSeasonalIds, setSelectedSeasonalIds] = useState<string[]>([])
+
+  const seasonalArticles = (articles ?? []).filter((article) => article.isSeasonal)
 
   useEffect(() => {
     if (open && suggestion) {
@@ -67,6 +72,18 @@ export function StartCycleModal({ open, onOpenChange }: StartCycleModalProps) {
       setErrors({})
     }
   }, [open])
+
+  // Seasonal articles default to unavailable every cycle, so the picker
+  // always opens blank — nothing carries over from the previous cycle.
+  useEffect(() => {
+    if (open) setSelectedSeasonalIds([])
+  }, [open])
+
+  const toggleSeasonalArticle = (articleId: string, checked: boolean) => {
+    setSelectedSeasonalIds((prev) =>
+      checked ? [...prev, articleId] : prev.filter((id) => id !== articleId)
+    )
+  }
 
   const setField = (field: keyof typeof emptyForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -89,6 +106,7 @@ export function StartCycleModal({ open, onOpenChange }: StartCycleModalProps) {
       {
         label: form.label.trim(),
         deliveryDate: fromDateInputValue(form.deliveryDate),
+        seasonalArticleIds: selectedSeasonalIds,
       },
       { onSuccess: () => onOpenChange(false) }
     )
@@ -131,6 +149,31 @@ export function StartCycleModal({ open, onOpenChange }: StartCycleModalProps) {
               />
               {errors.deliveryDate && <p className="text-xs text-destructive mt-1">{errors.deliveryDate}</p>}
             </div>
+
+            {seasonalArticles.length > 0 && (
+              <div>
+                <label className="text-sm font-medium">{t("Seasonal articles")}</label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {t("Off by default — check the ones available this cycle.")}
+                </p>
+                <div className="mt-2 max-h-40 overflow-y-auto rounded-md border divide-y">
+                  {seasonalArticles.map((article) => (
+                    <label
+                      key={article.id}
+                      className="flex items-center gap-2 py-2 px-3 text-sm cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-border accent-primary"
+                        checked={selectedSeasonalIds.includes(article.id)}
+                        onChange={(e) => toggleSeasonalArticle(article.id, e.target.checked)}
+                      />
+                      {article.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
           </form>
         )}
 
