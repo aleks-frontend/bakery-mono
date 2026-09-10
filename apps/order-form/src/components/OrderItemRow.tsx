@@ -29,7 +29,9 @@ export function OrderItemRow({
     () =>
       articles.map((a) => ({
         value: a.id,
-        label: `${a.name} (${a.price} ${t("RSD")})`,
+        label: a.isSeasonal
+          ? `${a.name} (${t("Seasonal")}) — ${a.price} ${t("RSD")}`
+          : `${a.name} (${a.price} ${t("RSD")})`,
       })),
     [articles, t]
   );

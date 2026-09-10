@@ -23,6 +23,10 @@ export type Cycle = z.infer<typeof cycleSchema>;
 export const startCycleSchema = z.object({
   label: z.string().min(1),
   deliveryDate: z.coerce.date(),
+  // Ids of Articles with isSeasonal=true that the baker is turning on for
+  // this cycle. Every other seasonal article is reset to unavailable when
+  // the cycle starts — see POST /api/cycles.
+  seasonalArticleIds: z.array(z.string()).default([]),
 });
 export type StartCycleInput = z.infer<typeof startCycleSchema>;
 

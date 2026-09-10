@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import type { ArticleWithAvailability } from "@bakery/api-client"
@@ -123,7 +124,12 @@ export function ArticlesTable({
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         ),
-        cell: ({ row }) => <div className="font-medium">{row.getValue("name")}</div>,
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2 font-medium">
+            {row.getValue("name")}
+            {row.original.isSeasonal && <Badge variant="secondary">{t("Seasonal")}</Badge>}
+          </div>
+        ),
       },
       {
         accessorKey: "price",
