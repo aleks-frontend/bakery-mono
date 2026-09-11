@@ -114,7 +114,7 @@ export function StartCycleModal({ open, onOpenChange }: StartCycleModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-xl">
         <DialogHeader className="pr-10">
           <DialogTitle>{t("Start Next Cycle")}</DialogTitle>
           <DialogDescription>
