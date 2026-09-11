@@ -300,7 +300,7 @@ export function OrderFormModal({ open, onOpenChange, order, prefill, repeatingOr
               value={form.remark}
               onChange={(e) => setField("remark", e.target.value)}
               rows={2}
-              className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-none"
+              className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-white resize-none"
             />
           </div>
 

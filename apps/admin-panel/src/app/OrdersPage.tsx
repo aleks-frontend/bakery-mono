@@ -510,7 +510,7 @@ export function OrdersPage() {
             value={bulkStatus}
             disabled={bulkStatusMutation.isPending}
             onChange={(e) => handleBulkStatusChange(e.target.value as OrderStatus)}
-            className="border border-input rounded-md px-2 py-1.5 text-sm bg-background disabled:opacity-50"
+            className="border border-input rounded-md px-2 py-1.5 text-sm bg-white disabled:opacity-50"
           >
             <option value="">{t("Select status...")}</option>
             <option value="NOT_RECEIVED">{t("Not received")}</option>

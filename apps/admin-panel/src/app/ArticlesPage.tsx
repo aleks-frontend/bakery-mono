@@ -180,7 +180,7 @@ export function ArticlesPage() {
             value={bulkAvailability}
             disabled={availabilityMutation.isPending}
             onChange={(e) => handleBulkAvailabilityChange(e.target.value as "true" | "false")}
-            className="border border-input rounded-md px-2 py-1.5 text-sm bg-background disabled:opacity-50"
+            className="border border-input rounded-md px-2 py-1.5 text-sm bg-white disabled:opacity-50"
           >
             <option value="">{t("Set availability...")}</option>
             <option value="true">{t("Available")}</option>

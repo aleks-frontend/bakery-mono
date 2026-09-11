@@ -50,7 +50,7 @@ export function OrderItemsEditor({
                 value={item.articleId}
                 onChange={(e) => onUpdateItem(i, "articleId", e.target.value)}
                 className={cn(
-                  "w-full border rounded-md px-3 py-2 text-sm bg-background",
+                  "w-full border rounded-md px-3 py-2 text-sm bg-white",
                   errors[`item_${i}_article`] ? "border-destructive" : "border-input"
                 )}
               >
@@ -78,7 +78,7 @@ export function OrderItemsEditor({
                 min={1}
                 value={item.quantity}
                 onChange={(e) => onUpdateItem(i, "quantity", Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-full border border-input rounded-md px-2 py-2 text-sm bg-background"
+                className="w-full border border-input rounded-md px-2 py-2 text-sm bg-white"
               />
             </div>
             {showPricing && (
