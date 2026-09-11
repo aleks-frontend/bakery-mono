@@ -53,6 +53,8 @@ export type {
   NextCycleStartSuggestion,
   StartCycleInput,
   CloseCycleInput,
+  GenerateHolidayMessageInput,
+  GenerateHolidayMessageResult,
 } from "@bakery/schemas";
 export type { ItemValidationError, RepeatingOrderCloneFailure } from "@bakery/schemas";
 export type { DashboardStats } from "@bakery/schemas";

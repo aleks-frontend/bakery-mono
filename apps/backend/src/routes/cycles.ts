@@ -1,10 +1,16 @@
 import { Router } from "express";
-import { startCycleSchema, closeCycleSchema, resolveCloneFailureSchema } from "@bakery/schemas";
+import {
+  startCycleSchema,
+  closeCycleSchema,
+  resolveCloneFailureSchema,
+  generateHolidayMessageRequestSchema,
+} from "@bakery/schemas";
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { suggestNextCycleStartDate, suggestCycleStart } from "../lib/cycleDates.js";
 import { cloneRepeatingOrdersIntoCycle } from "../lib/cloneRepeatingOrders.js";
+import { generateHolidayMessages, HolidayMessageGenerationError } from "../lib/ai.js";
 import { repeatingOrderInclude } from "./repeatingOrders.js";
 
 export const cyclesRouter = Router();
@@ -78,6 +84,28 @@ cyclesRouter.post("/", async (req, res) => {
 
   const repeatingOrdersCloned = await cloneRepeatingOrdersIntoCycle(cycle.id);
   res.status(201).json({ cycle, repeatingOrdersCloned });
+});
+
+// Pure generation step for the Close Ordering modal's holiday-message
+// textareas — doesn't touch the DB, the admin still has to hit Close Ordering
+// to persist whatever ends up in the three fields (AI-generated or hand-edited).
+cyclesRouter.post("/generate-holiday-message", async (req, res) => {
+  const parsed = generateHolidayMessageRequestSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
+  try {
+    const messages = await generateHolidayMessages(parsed.data.instruction, parsed.data.nextCycleStartDate);
+    res.json(messages);
+  } catch (error) {
+    if (error instanceof HolidayMessageGenerationError) {
+      res.status(502).json({ error: error.message });
+      return;
+    }
+    throw error;
+  }
 });
 
 cyclesRouter.patch("/:id/close", async (req, res) => {

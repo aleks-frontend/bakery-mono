@@ -3,6 +3,8 @@ import type {
   CloseCycleInput,
   Cycle,
   CycleStartSuggestion,
+  GenerateHolidayMessageInput,
+  GenerateHolidayMessageResult,
   ItemValidationError,
   NextCycleStartSuggestion,
   RepeatingOrderCloneFailure,
@@ -27,6 +29,7 @@ export interface CyclesClient {
   nextCycleStartSuggestion(): Promise<NextCycleStartSuggestion>;
   startSuggestion(): Promise<CycleStartSuggestion>;
   start(input: StartCycleInput): Promise<StartCycleResult>;
+  generateHolidayMessage(input: GenerateHolidayMessageInput): Promise<GenerateHolidayMessageResult>;
   close(id: string, input: CloseCycleInput): Promise<Cycle>;
   reopen(id: string): Promise<Cycle>;
   deliver(id: string): Promise<Cycle>;
@@ -43,6 +46,11 @@ export function createCyclesClient(http: HttpClient): CyclesClient {
       http.request<NextCycleStartSuggestion>("/api/cycles/next-cycle-start-suggestion"),
     startSuggestion: () => http.request<CycleStartSuggestion>("/api/cycles/start-suggestion"),
     start: (input) => http.request<StartCycleResult>("/api/cycles", { method: "POST", body: input }),
+    generateHolidayMessage: (input) =>
+      http.request<GenerateHolidayMessageResult>("/api/cycles/generate-holiday-message", {
+        method: "POST",
+        body: input,
+      }),
     close: (id, input) =>
       http.request<Cycle>(`/api/cycles/${encodeURIComponent(id)}/close`, { method: "PATCH", body: input }),
     reopen: (id) => http.request<Cycle>(`/api/cycles/${encodeURIComponent(id)}/reopen`, { method: "PATCH" }),

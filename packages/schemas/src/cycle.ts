@@ -38,6 +38,19 @@ export const closeCycleSchema = z.object({
 });
 export type CloseCycleInput = z.infer<typeof closeCycleSchema>;
 
+export const generateHolidayMessageRequestSchema = z.object({
+  instruction: z.string().min(1),
+  nextCycleStartDate: z.coerce.date(),
+});
+export type GenerateHolidayMessageInput = z.infer<typeof generateHolidayMessageRequestSchema>;
+
+export const generateHolidayMessageResponseSchema = z.object({
+  en: z.string(),
+  sr: z.string(),
+  hu: z.string(),
+});
+export type GenerateHolidayMessageResult = z.infer<typeof generateHolidayMessageResponseSchema>;
+
 export const nextCycleStartSuggestionSchema = z.object({
   nextCycleStartDate: z.coerce.date(),
 });
