@@ -115,7 +115,7 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-xl">
         <DialogHeader className="pr-10">
           <DialogTitle>{t("Confirm Close Ordering")}</DialogTitle>
           <DialogDescription>
@@ -135,7 +135,7 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
             <div>
               <label className="text-sm font-medium">{t("Next order window opens")} *</label>
               <Input
-                className={cn("mt-1", errors.nextCycleStartDate && "border-destructive")}
+                className={cn("mt-1 bg-white", errors.nextCycleStartDate && "border-destructive")}
                 type="date"
                 value={form.nextCycleStartDate}
                 onChange={(e) => setField("nextCycleStartDate", e.target.value)}
@@ -169,8 +169,8 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
                     <textarea
                       value={form.holidayMessageEn}
                       onChange={(e) => setField("holidayMessageEn", e.target.value)}
-                      rows={2}
-                      className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-none"
+                      rows={4}
+                      className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-white resize-none"
                     />
                   </div>
 
@@ -179,8 +179,8 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
                     <textarea
                       value={form.holidayMessageSr}
                       onChange={(e) => setField("holidayMessageSr", e.target.value)}
-                      rows={2}
-                      className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-none"
+                      rows={4}
+                      className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-white resize-none"
                     />
                   </div>
 
@@ -189,8 +189,8 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
                     <textarea
                       value={form.holidayMessageHu}
                       onChange={(e) => setField("holidayMessageHu", e.target.value)}
-                      rows={2}
-                      className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-none"
+                      rows={4}
+                      className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-white resize-none"
                     />
                   </div>
                 </>
