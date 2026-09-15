@@ -1,9 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { useFieldArray } from "react-hook-form";
-import type { Control } from "react-hook-form";
+import type { Control, FieldArrayWithId, UseFieldArrayAppend, UseFieldArrayRemove } from "react-hook-form";
 import type { OrderFormValues } from "@/schemas/orderSchemas";
 import type { PublicArticle } from "@bakery/api-client";
-import type { FieldArrayWithId } from "react-hook-form";
+import type { ResolvedItemError } from "@/lib/itemValidationErrors";
 import { OrderItemRow } from "./OrderItemRow";
 import { OutOfStockArticles } from "./OutOfStockArticles";
 
@@ -12,14 +11,25 @@ interface OrderItemsProps {
   articles: PublicArticle[];
   outOfStockArticles: PublicArticle[];
   onUpdate: () => void;
+  fields: FieldArrayWithId<OrderFormValues, "items", "id">[];
+  append: UseFieldArrayAppend<OrderFormValues, "items">;
+  remove: UseFieldArrayRemove;
+  itemErrors: (ResolvedItemError | undefined)[];
+  lowStockThreshold: number;
 }
 
-export function OrderItems({ control, articles, outOfStockArticles, onUpdate }: OrderItemsProps) {
+export function OrderItems({
+  control,
+  articles,
+  outOfStockArticles,
+  onUpdate,
+  fields,
+  append,
+  remove,
+  itemErrors,
+  lowStockThreshold,
+}: OrderItemsProps) {
   const { t } = useTranslation();
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "items",
-  });
 
   const handleAdd = () => {
     const firstId = articles[0]?.id ?? "";
@@ -30,21 +40,18 @@ export function OrderItems({ control, articles, outOfStockArticles, onUpdate }: 
     <>
       <h3 className="mt-6 text-left font-semibold">{t("Ordered products")}</h3>
       <div className="space-y-3 mt-3">
-        {fields.map(
-          (
-            field: FieldArrayWithId<OrderFormValues, "items", "id">,
-            index: number
-          ) => (
-            <OrderItemRow
-              key={field.id}
-              control={control}
-              articles={articles}
-              index={index}
-              onRemove={remove}
-              onUpdate={onUpdate}
-            />
-          )
-        )}
+        {fields.map((field, index) => (
+          <OrderItemRow
+            key={field.id}
+            control={control}
+            articles={articles}
+            index={index}
+            onRemove={remove}
+            onUpdate={onUpdate}
+            itemError={itemErrors[index]}
+            lowStockThreshold={lowStockThreshold}
+          />
+        ))}
       </div>
       <button
         type="button"

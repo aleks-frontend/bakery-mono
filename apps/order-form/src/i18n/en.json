@@ -53,5 +53,12 @@
   "Thank you, {{recipient}} — we've got your order.": "Thank you, {{recipient}} — we've got your order.",
   "Place another order": "Place another order",
   "Submitting order...": "Submitting order...",
-  "Something went wrong loading the order form. Please try again in a moment.": "Something went wrong loading the order form. Please try again in a moment."
+  "Something went wrong loading the order form. Please try again in a moment.": "Something went wrong loading the order form. Please try again in a moment.",
+  "Less than {{threshold}} available": "Less than {{threshold}} available",
+  "Only {{remaining}} left — quantity updated": "Only {{remaining}} left — quantity updated",
+  "{{article}}: only {{remaining}} left — quantity updated": "{{article}}: only {{remaining}} left — quantity updated",
+  "No longer available": "No longer available",
+  "{{article}} was removed — no longer available": "{{article}} was removed — no longer available",
+  "This item": "This item",
+  "Your order was updated based on current availability — please review it and submit again.": "Your order was updated based on current availability — please review it and submit again."
 }

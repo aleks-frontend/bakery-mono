@@ -53,5 +53,12 @@
   "Thank you, {{recipient}} — we've got your order.": "Köszönjük, {{recipient}} — megkaptuk a rendelését.",
   "Place another order": "Új rendelés leadása",
   "Submitting order...": "Rendelés küldése...",
-  "Something went wrong loading the order form. Please try again in a moment.": "Hiba történt a rendelési űrlap betöltésekor. Kérjük, próbálja újra egy pillanat múlva."
+  "Something went wrong loading the order form. Please try again in a moment.": "Hiba történt a rendelési űrlap betöltésekor. Kérjük, próbálja újra egy pillanat múlva.",
+  "Less than {{threshold}} available": "Kevesebb mint {{threshold}} db elérhető",
+  "Only {{remaining}} left — quantity updated": "Már csak {{remaining}} maradt — a mennyiség frissítve",
+  "{{article}}: only {{remaining}} left — quantity updated": "{{article}}: már csak {{remaining}} maradt — a mennyiség frissítve",
+  "No longer available": "Már nem elérhető",
+  "{{article}} was removed — no longer available": "{{article}} eltávolítva — már nem elérhető",
+  "This item": "Ez a termék",
+  "Your order was updated based on current availability — please review it and submit again.": "A rendelését frissítettük az aktuális elérhetőség alapján — kérjük, ellenőrizze, és küldje el újra."
 }

@@ -35,6 +35,9 @@ export const publicArticleSchema = z.object({
   price: z.number().int().positive(),
   available: z.boolean(),
   isSeasonal: z.boolean(),
+  // Derived signal only — never the actual remaining count, since the baker
+  // doesn't want customers inferring exact stock/production volume from it.
+  lowStock: z.boolean(),
 });
 export type PublicArticle = z.infer<typeof publicArticleSchema>;
 
@@ -50,5 +53,9 @@ export const publicArticlesResponseSchema = z.object({
   acceptingOrders: z.boolean(),
   reopenDate: z.coerce.date().nullable(),
   holidayMessage: holidayMessageByLocaleSchema,
+  // Threshold behind each article's `lowStock` flag — sent so the frontend's
+  // "Less than N available" copy can't drift out of sync with the backend
+  // constant it's derived from.
+  lowStockThreshold: z.number().int().positive(),
 });
 export type PublicArticlesResponse = z.infer<typeof publicArticlesResponseSchema>;

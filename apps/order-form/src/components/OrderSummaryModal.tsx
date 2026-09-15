@@ -3,13 +3,15 @@ import Modal from "react-modal";
 import { useSubmitOrder } from "@/hooks/useSubmitOrder";
 import { Spinner } from "./Spinner";
 import type { OrderSummary } from "@/types/orderTypes";
-import type { CreatePublicOrderInput } from "@bakery/api-client";
+import type { CreatePublicOrderInput, HttpError, ItemValidationError } from "@bakery/api-client";
+import { isItemValidationErrors } from "@/lib/itemValidationErrors";
 
 interface OrderSummaryModalProps {
   isOpen: boolean;
   onClose: () => void;
   summary: OrderSummary | null;
   onSuccess: (summary: OrderSummary) => void;
+  onValidationErrors: (errors: ItemValidationError[]) => void;
 }
 
 function toCreateOrderInput(summary: OrderSummary, locale: CreatePublicOrderInput["locale"]): CreatePublicOrderInput {
@@ -30,6 +32,7 @@ export function OrderSummaryModal({
   onClose,
   summary,
   onSuccess,
+  onValidationErrors,
 }: OrderSummaryModalProps) {
   const { t, i18n } = useTranslation();
   const { mutateAsync, isPending } = useSubmitOrder();
@@ -41,8 +44,13 @@ export function OrderSummaryModal({
       langCode === "sr" || langCode === "hu" ? langCode : "en";
     mutateAsync(toCreateOrderInput(summary, locale))
       .then(() => onSuccess(summary))
-      .catch(() => {
-        // Error already surfaced via the toast in useSubmitOrder
+      .catch((err: HttpError) => {
+        // The toast (from useSubmitOrder) already explains what happened; this
+        // hands the structured errors back to the form so it can auto-clamp
+        // or remove the affected line items and close the modal to reveal them.
+        if (isItemValidationErrors(err.details)) {
+          onValidationErrors(err.details);
+        }
       });
   };
 

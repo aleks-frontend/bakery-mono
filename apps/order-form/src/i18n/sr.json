@@ -53,5 +53,12 @@
   "Thank you, {{recipient}} — we've got your order.": "Hvala, {{recipient}} — vaša porudžbina je primljena.",
   "Place another order": "Pošalji novu porudžbinu",
   "Submitting order...": "Slanje porudžbine...",
-  "Something went wrong loading the order form. Please try again in a moment.": "Došlo je do greške pri učitavanju formulara za porudžbinu. Molimo pokušajte ponovo za trenutak."
+  "Something went wrong loading the order form. Please try again in a moment.": "Došlo je do greške pri učitavanju formulara za porudžbinu. Molimo pokušajte ponovo za trenutak.",
+  "Less than {{threshold}} available": "Preostalo manje od {{threshold}} komada",
+  "Only {{remaining}} left — quantity updated": "Preostalo je samo {{remaining}} — količina je ažurirana",
+  "{{article}}: only {{remaining}} left — quantity updated": "{{article}}: preostalo je samo {{remaining}} — količina je ažurirana",
+  "No longer available": "Više nije dostupno",
+  "{{article}} was removed — no longer available": "{{article}} je uklonjen — više nije dostupan",
+  "This item": "Ovaj artikal",
+  "Your order was updated based on current availability — please review it and submit again.": "Vaša porudžbina je ažurirana prema trenutnoj dostupnosti — proverite je i ponovo je pošaljite."
 }

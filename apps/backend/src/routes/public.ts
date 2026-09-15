@@ -1,7 +1,13 @@
 import { Router } from "express";
 import { createPublicOrderSchema } from "@bakery/schemas";
 import { prisma } from "../lib/prisma.js";
-import { computeAvailability, getCurrentCycle, getOrderedQuantitiesByArticle } from "../lib/availability.js";
+import {
+  computeAvailability,
+  computeLowStock,
+  getCurrentCycle,
+  getOrderedQuantitiesByArticle,
+  LOW_STOCK_THRESHOLD,
+} from "../lib/availability.js";
 import { priceAndValidateItems } from "../lib/orderPricing.js";
 import { sendOrderNotifications } from "../lib/email.js";
 import { sendTelegramNotification } from "../lib/telegram.js";
@@ -28,14 +34,19 @@ publicRouter.get("/articles", async (_req, res) => {
   const latestCycle = currentCycle ?? (await prisma.cycle.findFirst({ orderBy: { createdAt: "desc" } }));
 
   res.json({
-    articles: articles.map((article) => ({
-      id: article.id,
-      name: article.name,
-      price: article.price,
-      available: computeAvailability(article, orderedQty.get(article.id) ?? 0),
-      isSeasonal: article.isSeasonal,
-    })),
+    articles: articles.map((article) => {
+      const ordered = orderedQty.get(article.id) ?? 0;
+      return {
+        id: article.id,
+        name: article.name,
+        price: article.price,
+        available: computeAvailability(article, ordered),
+        isSeasonal: article.isSeasonal,
+        lowStock: computeLowStock(article, ordered),
+      };
+    }),
     acceptingOrders: currentCycle != null,
+    lowStockThreshold: LOW_STOCK_THRESHOLD,
     reopenDate: currentCycle ? null : (latestCycle?.nextCycleStartDate ?? null),
     holidayMessage: {
       en: currentCycle ? null : (latestCycle?.holidayMessageEn ?? null),

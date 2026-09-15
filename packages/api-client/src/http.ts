@@ -48,7 +48,11 @@ export function createHttpClient(baseURL: string): HttpClient {
           : `Request failed: ${response.status}`;
       const error = new Error(message) as HttpError;
       error.status = response.status;
-      error.details = data;
+      // Backend error bodies are `{ error: string, details?: T }` — unwrap so
+      // callers get `details` itself (e.g. an ItemValidationError[]) instead
+      // of the whole envelope, which always failed an `Array.isArray` check.
+      error.details =
+        data && typeof data === "object" && "details" in data ? (data as { details: unknown }).details : data;
       throw error;
     }
 

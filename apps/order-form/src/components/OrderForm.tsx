@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
 import { orderFormSchema, type OrderFormValues } from "@/schemas/orderSchemas";
-import type { PublicArticle } from "@bakery/api-client";
+import type { ItemValidationError, PublicArticle } from "@bakery/api-client";
 import type { OrderSummary } from "@/types/orderTypes";
+import { resolveItemValidationError, type ResolvedItemError } from "@/lib/itemValidationErrors";
 import {
   getItemTotal,
   getTotalPrice,
@@ -19,6 +21,7 @@ interface OrderFormProps {
   articles: PublicArticle[];
   outOfStockArticles: PublicArticle[];
   acceptingOrders: boolean;
+  lowStockThreshold: number;
 }
 
 const defaultItem = (
@@ -28,14 +31,19 @@ const defaultItem = (
   quantity: 1,
 });
 
-export function OrderForm({ articles, outOfStockArticles, acceptingOrders }: OrderFormProps) {
+export function OrderForm({ articles, outOfStockArticles, acceptingOrders, lowStockThreshold }: OrderFormProps) {
   const { t } = useTranslation();
   const { load: loadPersistedCustomer, save: savePersistedCustomer } =
     usePersistedCustomer();
   const [modalOpen, setModalOpen] = useState(false);
   const [updateTrigger, setUpdateTrigger] = useState(0);
   const [lastSubmitted, setLastSubmitted] = useState<OrderSummary | null>(null);
-  const onItemsUpdate = () => setUpdateTrigger((n) => n + 1);
+  const onItemsUpdate = () => {
+    setUpdateTrigger((n) => n + 1);
+    // Any manual edit means the user is already addressing the conflict —
+    // clear the flags rather than risk showing a stale one.
+    setItemErrors({});
+  };
 
   const firstArticleId = articles[0]?.id ?? "";
 
@@ -60,6 +68,15 @@ export function OrderForm({ articles, outOfStockArticles, acceptingOrders }: Ord
   const { register, control, watch, handleSubmit, setValue, reset } = form;
   const items = watch("items");
   const formValues = watch();
+  const { fields, append, remove } = useFieldArray({ control, name: "items" });
+  const [itemErrors, setItemErrors] = useState<Record<string, ResolvedItemError>>({});
+  // `fields` from useFieldArray only reflects each row's *initial* articleId,
+  // not live edits — so errors (keyed by articleId) are re-matched here
+  // against `items` (the live watched values) and handed down by index.
+  const itemErrorsByIndex = useMemo(
+    () => (items ?? []).map((item) => itemErrors[item.articleId]),
+    [items, itemErrors],
+  );
 
   useEffect(() => {
     const persisted = loadPersistedCustomer();
@@ -134,6 +151,36 @@ export function OrderForm({ articles, outOfStockArticles, acceptingOrders }: Ord
     setModalOpen(false);
   };
 
+  const handleValidationErrors = (errors: ItemValidationError[]) => {
+    const currentItems = form.getValues("items");
+    const removeIndices: number[] = [];
+    const nextItemErrors: Record<string, ResolvedItemError> = {};
+
+    for (const error of errors) {
+      const resolved = resolveItemValidationError(t, error, articles);
+      currentItems.forEach((item, index) => {
+        if (item.articleId !== error.articleId) return;
+        if (resolved.action === "clamped") {
+          setValue(`items.${index}.quantity`, resolved.remaining);
+          nextItemErrors[error.articleId] = resolved;
+        } else {
+          removeIndices.push(index);
+        }
+      });
+    }
+
+    if (removeIndices.length > 0) remove(removeIndices);
+    setItemErrors(nextItemErrors);
+    setModalOpen(false);
+
+    if (errors.length > 0) {
+      toast(t("Your order was updated based on current availability — please review it and submit again."), {
+        icon: "✏️",
+        duration: 10000,
+      });
+    }
+  };
+
   const onOrderSuccess = (summary: OrderSummary) => {
     const currentValues = form.getValues();
     savePersistedCustomer({
@@ -148,6 +195,7 @@ export function OrderForm({ articles, outOfStockArticles, acceptingOrders }: Ord
       repeat: false,
       items: [defaultItem(firstArticleId)],
     });
+    setItemErrors({});
     setModalOpen(false);
     setLastSubmitted(summary);
   };
@@ -223,6 +271,11 @@ export function OrderForm({ articles, outOfStockArticles, acceptingOrders }: Ord
           articles={articles}
           outOfStockArticles={outOfStockArticles}
           onUpdate={onItemsUpdate}
+          fields={fields}
+          append={append}
+          remove={remove}
+          itemErrors={itemErrorsByIndex}
+          lowStockThreshold={lowStockThreshold}
         />
 
         <div className="mt-6 flex items-baseline justify-end gap-2 border-t border-bakery-border pt-4">
@@ -275,6 +328,7 @@ export function OrderForm({ articles, outOfStockArticles, acceptingOrders }: Ord
         onClose={onModalClose}
         summary={modalSummary}
         onSuccess={onOrderSuccess}
+        onValidationErrors={handleValidationErrors}
       />
     </>
   );

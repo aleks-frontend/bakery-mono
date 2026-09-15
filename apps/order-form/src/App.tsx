@@ -56,6 +56,7 @@ function App() {
           articles={articles}
           outOfStockArticles={outOfStockArticles}
           acceptingOrders={acceptingOrders}
+          lowStockThreshold={data?.lowStockThreshold ?? 5}
         />
       ) : null}
     </>
