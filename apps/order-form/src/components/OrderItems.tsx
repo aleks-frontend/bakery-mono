@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import type { Control, FieldArrayWithId, UseFieldArrayAppend, UseFieldArrayRemove } from "react-hook-form";
+import { useWatch, type Control, type FieldArrayWithId, type UseFieldArrayAppend, type UseFieldArrayRemove } from "react-hook-form";
 import type { OrderFormValues } from "@/schemas/orderSchemas";
 import type { PublicArticle } from "@bakery/api-client";
 import type { ResolvedItemError } from "@/lib/itemValidationErrors";
@@ -30,10 +30,12 @@ export function OrderItems({
   lowStockThreshold,
 }: OrderItemsProps) {
   const { t } = useTranslation();
+  const items = useWatch({ control, name: "items" });
 
   const handleAdd = () => {
-    const firstId = articles[0]?.id ?? "";
-    append({ articleId: firstId, quantity: 1 });
+    const selectedIds = new Set((items ?? []).map((item) => item.articleId));
+    const nextArticle = articles.find((a) => !selectedIds.has(a.id));
+    append({ articleId: nextArticle?.id ?? articles[0]?.id ?? "", quantity: 1 });
   };
 
   return (

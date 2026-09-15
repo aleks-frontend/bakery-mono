@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Controller,
+  useWatch,
   type Control,
   type UseFieldArrayRemove,
 } from "react-hook-form";
@@ -36,16 +37,33 @@ export function OrderItemRow({
   lowStockThreshold,
 }: OrderItemRowProps) {
   const { t } = useTranslation();
+  const allItems = useWatch({ control, name: "items" });
+  const currentArticleId = allItems?.[index]?.articleId ?? "";
+  // Articles already chosen in *other* rows are hidden from this row's menu so the
+  // same article can't be picked twice — but this row's own current value stays,
+  // even if duplicated elsewhere, so its label keeps displaying correctly.
+  const selectedElsewhere = useMemo(
+    () =>
+      new Set(
+        (allItems ?? [])
+          .filter((_, i) => i !== index)
+          .map((item) => item.articleId)
+          .filter(Boolean)
+      ),
+    [allItems, index]
+  );
   const articleOptions = useMemo<ArticleOption[]>(
     () =>
-      articles.map((a) => ({
-        value: a.id,
-        label: a.isSeasonal
-          ? `${a.name} (${t("Seasonal")}) — ${a.price} ${t("RSD")}`
-          : `${a.name} (${a.price} ${t("RSD")})`,
-        lowStock: a.lowStock,
-      })),
-    [articles, t]
+      articles
+        .filter((a) => a.id === currentArticleId || !selectedElsewhere.has(a.id))
+        .map((a) => ({
+          value: a.id,
+          label: a.isSeasonal
+            ? `${a.name} (${t("Seasonal")}) — ${a.price} ${t("RSD")}`
+            : `${a.name} (${a.price} ${t("RSD")})`,
+          lowStock: a.lowStock,
+        })),
+    [articles, t, selectedElsewhere, currentArticleId]
   );
 
   const isClamped = itemError?.action === "clamped";
