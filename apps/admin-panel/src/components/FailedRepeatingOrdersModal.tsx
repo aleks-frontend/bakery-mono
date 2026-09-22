@@ -12,7 +12,9 @@ import { Separator } from "@/components/ui/separator"
 import { AlertTriangle, Loader2 } from "lucide-react"
 import { useCloneFailuresQuery } from "@/hooks/useCloneFailuresQuery"
 import { useResolveCloneFailureMutation } from "@/hooks/useResolveCloneFailureMutation"
+import { useRejectCloneFailureMutation } from "@/hooks/useRejectCloneFailureMutation"
 import { OrderFormModal } from "@/components/OrderFormModal"
+import { ConfirmActionDialog } from "@/components/ConfirmActionDialog"
 import { describeItemValidationError } from "@/lib/itemValidationErrors"
 import type { Order, RepeatingOrderCloneFailure } from "@bakery/api-client"
 
@@ -26,11 +28,18 @@ export function FailedRepeatingOrdersModal({ open, onOpenChange, cycleId }: Fail
   const { t } = useTranslation()
   const { data: failures = [], isLoading } = useCloneFailuresQuery(cycleId, open)
   const resolveMutation = useResolveCloneFailureMutation(cycleId)
+  const rejectMutation = useRejectCloneFailureMutation(cycleId)
   const [recreating, setRecreating] = useState<RepeatingOrderCloneFailure | null>(null)
+  const [rejecting, setRejecting] = useState<RepeatingOrderCloneFailure | null>(null)
 
   const handleCreated = (failure: RepeatingOrderCloneFailure, order: Order) => {
     resolveMutation.mutate({ failureId: failure.id, orderId: order.id })
     setRecreating(null)
+  }
+
+  const handleReject = () => {
+    if (!rejecting) return
+    rejectMutation.mutate(rejecting.id, { onSuccess: () => setRejecting(null) })
   }
 
   return (
@@ -66,9 +75,14 @@ export function FailedRepeatingOrdersModal({ open, onOpenChange, cycleId }: Fail
                         {failure.repeatingOrder.phone} · {failure.repeatingOrder.location}
                       </p>
                     </div>
-                    <Button size="sm" onClick={() => setRecreating(failure)}>
-                      {t("Create Order")}
-                    </Button>
+                    <div className="flex shrink-0 gap-2">
+                      <Button size="sm" variant="outline" onClick={() => setRejecting(failure)}>
+                        {t("Reject order")}
+                      </Button>
+                      <Button size="sm" onClick={() => setRecreating(failure)}>
+                        {t("Create Order")}
+                      </Button>
+                    </div>
                   </div>
 
                   <ul className="text-sm space-y-1">
@@ -118,6 +132,22 @@ export function FailedRepeatingOrdersModal({ open, onOpenChange, cycleId }: Fail
           onCreated={(order) => handleCreated(recreating, order)}
         />
       )}
+
+      <ConfirmActionDialog
+        open={rejecting !== null}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) setRejecting(null)
+        }}
+        title={t("Reject repeating order")}
+        description={t(
+          "This dismisses {{recipient}}'s order for this cycle without creating one. It won't be suggested again for this cycle — you can still add it manually later if you change your mind.",
+          { recipient: rejecting?.repeatingOrder.recipient ?? "" },
+        )}
+        confirmLabel={t("Reject order")}
+        pendingLabel={t("Rejecting...")}
+        isPending={rejectMutation.isPending}
+        onConfirm={handleReject}
+      />
     </>
   )
 }
