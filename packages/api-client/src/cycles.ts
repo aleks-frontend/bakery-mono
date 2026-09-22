@@ -38,6 +38,7 @@ export interface CyclesClient {
   undoDeliver(id: string): Promise<Cycle>;
   cloneFailures(cycleId: string): Promise<RepeatingOrderCloneFailure[]>;
   resolveCloneFailure(cycleId: string, failureId: string, orderId: string): Promise<RepeatingOrderCloneFailure>;
+  rejectCloneFailure(cycleId: string, failureId: string): Promise<RepeatingOrderCloneFailure>;
 }
 
 export function createCyclesClient(http: HttpClient): CyclesClient {
@@ -70,6 +71,11 @@ export function createCyclesClient(http: HttpClient): CyclesClient {
       http.request<RepeatingOrderCloneFailure>(
         `/api/cycles/${encodeURIComponent(cycleId)}/clone-failures/${encodeURIComponent(failureId)}/resolve`,
         { method: "POST", body: { orderId } },
+      ),
+    rejectCloneFailure: (cycleId, failureId) =>
+      http.request<RepeatingOrderCloneFailure>(
+        `/api/cycles/${encodeURIComponent(cycleId)}/clone-failures/${encodeURIComponent(failureId)}/reject`,
+        { method: "POST" },
       ),
   };
 }

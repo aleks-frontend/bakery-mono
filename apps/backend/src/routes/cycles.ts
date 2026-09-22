@@ -267,6 +267,30 @@ cyclesRouter.post("/:id/clone-failures/:failureId/resolve", async (req, res) => 
   res.json(resolved);
 });
 
+// Dismisses a clone failure without creating an order, for repeating orders
+// that shouldn't go out this cycle after all (e.g. the customer cancelled,
+// or the baker decides the flagged items aren't worth a manual order). Same
+// resolvedAt/resolvedOrderId pair as /resolve, just with resolvedOrderId
+// left null — the schema already treats "resolved with no order" as valid,
+// so no separate rejected-state column is needed.
+cyclesRouter.post("/:id/clone-failures/:failureId/reject", async (req, res) => {
+  const failure = await prisma.repeatingOrderCloneFailure.findUnique({ where: { id: req.params.failureId } });
+  if (!failure || failure.cycleId !== req.params.id) {
+    res.status(404).json({ error: "Clone failure not found" });
+    return;
+  }
+  if (failure.resolvedAt) {
+    res.status(409).json({ error: "Clone failure already resolved" });
+    return;
+  }
+
+  const rejected = await prisma.repeatingOrderCloneFailure.update({
+    where: { id: failure.id },
+    data: { resolvedAt: new Date(), resolvedOrderId: null },
+  });
+  res.json(rejected);
+});
+
 cyclesRouter.patch("/:id/undo-deliver", async (req, res) => {
   try {
     const cycle = await prisma.cycle.update({
