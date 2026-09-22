@@ -38,6 +38,15 @@ export const closeCycleSchema = z.object({
 });
 export type CloseCycleInput = z.infer<typeof closeCycleSchema>;
 
+// Full replace of all three locales (a null/omitted locale is cleared) — the
+// admin panel always sends the whole form, same as closeCycleSchema.
+export const updateHolidayMessageSchema = z.object({
+  holidayMessageEn: z.string().nullable().optional(),
+  holidayMessageSr: z.string().nullable().optional(),
+  holidayMessageHu: z.string().nullable().optional(),
+});
+export type UpdateHolidayMessageInput = z.infer<typeof updateHolidayMessageSchema>;
+
 export const generateHolidayMessageRequestSchema = z.object({
   instruction: z.string().min(1),
   nextCycleStartDate: z.coerce.date(),

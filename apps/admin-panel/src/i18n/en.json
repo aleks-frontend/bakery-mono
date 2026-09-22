@@ -277,5 +277,10 @@
   "Loading dashboard...": "Loading dashboard...",
   "Error loading dashboard": "Error loading dashboard",
   "Selected cycle": "Selected cycle",
-  "All time": "All time"
+  "All time": "All time",
+  "Edit Holiday Message": "Edit Holiday Message",
+  "Shown to customers on the order form while ordering is closed. Leave a language empty to hide it.": "Shown to customers on the order form while ordering is closed. Leave a language empty to hide it.",
+  "Saving holiday message...": "Saving holiday message...",
+  "Holiday message saved": "Holiday message saved",
+  "Failed to save holiday message": "Failed to save holiday message"
 }

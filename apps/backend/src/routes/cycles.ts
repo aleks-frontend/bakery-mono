@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   startCycleSchema,
   closeCycleSchema,
+  updateHolidayMessageSchema,
   resolveCloneFailureSchema,
   generateHolidayMessageRequestSchema,
 } from "@bakery/schemas";
@@ -130,6 +131,36 @@ cyclesRouter.patch("/:id/close", async (req, res) => {
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
       res.status(409).json({ error: "Cycle not found or not currently open" });
+      return;
+    }
+    throw error;
+  }
+});
+
+// Lets the baker fix or replace the holiday message after the fact (e.g. an
+// unplanned closure). Only meaningful once ordering is closed — the public
+// endpoint ignores the message while a cycle is OPEN, and "Close Ordering"
+// overwrites it anyway — so OPEN cycles are rejected.
+cyclesRouter.patch("/:id/holiday-message", async (req, res) => {
+  const parsed = updateHolidayMessageSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
+  try {
+    const cycle = await prisma.cycle.update({
+      where: { id: req.params.id, status: { in: ["CLOSED", "COMPLETED"] } },
+      data: {
+        holidayMessageEn: parsed.data.holidayMessageEn ?? null,
+        holidayMessageSr: parsed.data.holidayMessageSr ?? null,
+        holidayMessageHu: parsed.data.holidayMessageHu ?? null,
+      },
+    });
+    res.json(cycle);
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      res.status(409).json({ error: "Cycle not found or still open" });
       return;
     }
     throw error;

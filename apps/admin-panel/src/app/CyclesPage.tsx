@@ -6,13 +6,14 @@ import { useDeliverCycleMutation } from "@/hooks/useDeliverCycleMutation"
 import { useUndoDeliverCycleMutation } from "@/hooks/useUndoDeliverCycleMutation"
 import { StartCycleModal } from "@/components/StartCycleModal"
 import { CloseCycleModal } from "@/components/CloseCycleModal"
+import { EditHolidayMessageModal } from "@/components/EditHolidayMessageModal"
 import { ConfirmActionDialog } from "@/components/ConfirmActionDialog"
 import { CycleStatusBadge } from "@/components/CycleStatusBadge"
 import { FailedRepeatingOrdersModal } from "@/components/FailedRepeatingOrdersModal"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Tooltip } from "@/components/ui/tooltip"
-import { AlertTriangle, Lock, PackageCheck, Plus, Undo2, Unlock } from "lucide-react"
+import { AlertTriangle, Lock, MessageSquareText, PackageCheck, Plus, Undo2, Unlock } from "lucide-react"
 
 // deliveryDate / nextCycleStartDate are calendar dates picked via a date
 // input (see StartCycleModal/CloseCycleModal), stored as UTC midnight —
@@ -35,6 +36,7 @@ export function CyclesPage() {
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false)
   const [isDeliverConfirmOpen, setIsDeliverConfirmOpen] = useState(false)
   const [isFailuresOpen, setIsFailuresOpen] = useState(false)
+  const [isEditMessageOpen, setIsEditMessageOpen] = useState(false)
 
   // Cycles progress OPEN -> CLOSED -> COMPLETED one at a time, so the most
   // recent one (by delivery date) always tells us what action is next.
@@ -155,6 +157,12 @@ export function CyclesPage() {
                   })}
                 </Button>
               )}
+              {latestCycle.status !== "OPEN" && (
+                <Button variant="outline" onClick={() => setIsEditMessageOpen(true)}>
+                  <MessageSquareText className="mr-2 h-4 w-4" />
+                  {t("Edit Holiday Message")}
+                </Button>
+              )}
               {latestCycle.status === "COMPLETED" && (
                 <>
                   <Button onClick={() => setIsStartOpen(true)}>
@@ -235,6 +243,11 @@ export function CyclesPage() {
             onOpenChange={setIsCloseConfirmOpen}
             cycleId={latestCycle.id}
             cycleLabel={latestCycle.label}
+          />
+          <EditHolidayMessageModal
+            open={isEditMessageOpen}
+            onOpenChange={setIsEditMessageOpen}
+            cycle={latestCycle}
           />
           <ConfirmActionDialog
             open={isDeliverConfirmOpen}

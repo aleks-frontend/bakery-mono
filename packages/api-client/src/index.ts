@@ -53,6 +53,7 @@ export type {
   NextCycleStartSuggestion,
   StartCycleInput,
   CloseCycleInput,
+  UpdateHolidayMessageInput,
   GenerateHolidayMessageInput,
   GenerateHolidayMessageResult,
 } from "@bakery/schemas";

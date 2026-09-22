@@ -9,6 +9,7 @@ import type {
   NextCycleStartSuggestion,
   RepeatingOrderCloneFailure,
   StartCycleInput,
+  UpdateHolidayMessageInput,
 } from "@bakery/schemas";
 import type { HttpClient } from "./http.js";
 
@@ -31,6 +32,7 @@ export interface CyclesClient {
   start(input: StartCycleInput): Promise<StartCycleResult>;
   generateHolidayMessage(input: GenerateHolidayMessageInput): Promise<GenerateHolidayMessageResult>;
   close(id: string, input: CloseCycleInput): Promise<Cycle>;
+  updateHolidayMessage(id: string, input: UpdateHolidayMessageInput): Promise<Cycle>;
   reopen(id: string): Promise<Cycle>;
   deliver(id: string): Promise<Cycle>;
   undoDeliver(id: string): Promise<Cycle>;
@@ -53,6 +55,11 @@ export function createCyclesClient(http: HttpClient): CyclesClient {
       }),
     close: (id, input) =>
       http.request<Cycle>(`/api/cycles/${encodeURIComponent(id)}/close`, { method: "PATCH", body: input }),
+    updateHolidayMessage: (id, input) =>
+      http.request<Cycle>(`/api/cycles/${encodeURIComponent(id)}/holiday-message`, {
+        method: "PATCH",
+        body: input,
+      }),
     reopen: (id) => http.request<Cycle>(`/api/cycles/${encodeURIComponent(id)}/reopen`, { method: "PATCH" }),
     deliver: (id) => http.request<Cycle>(`/api/cycles/${encodeURIComponent(id)}/deliver`, { method: "PATCH" }),
     undoDeliver: (id) =>

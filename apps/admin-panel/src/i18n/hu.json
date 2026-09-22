@@ -277,5 +277,10 @@
   "Loading dashboard...": "Irányítópult betöltése...",
   "Error loading dashboard": "Hiba az irányítópult betöltésekor",
   "Selected cycle": "Kiválasztott ciklus",
-  "All time": "Összesen"
+  "All time": "Összesen",
+  "Edit Holiday Message": "Ünnepi üzenet szerkesztése",
+  "Shown to customers on the order form while ordering is closed. Leave a language empty to hide it.": "A vásárlóknak jelenik meg a rendelési űrlapon, amíg a rendelés zárva van. Hagyjon üresen egy nyelvet, hogy elrejtse.",
+  "Saving holiday message...": "Ünnepi üzenet mentése...",
+  "Holiday message saved": "Ünnepi üzenet mentve",
+  "Failed to save holiday message": "Az ünnepi üzenet mentése sikertelen"
 }

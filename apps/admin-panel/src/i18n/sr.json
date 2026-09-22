@@ -277,5 +277,10 @@
   "Loading dashboard...": "Učitavanje kontrolne table...",
   "Error loading dashboard": "Greška pri učitavanju kontrolne table",
   "Selected cycle": "Izabrani ciklus",
-  "All time": "Sve vreme"
+  "All time": "Sve vreme",
+  "Edit Holiday Message": "Izmeni poruku za praznik",
+  "Shown to customers on the order form while ordering is closed. Leave a language empty to hide it.": "Prikazuje se kupcima na formi za naručivanje dok je naručivanje zatvoreno. Ostavite jezik praznim da ga sakrijete.",
+  "Saving holiday message...": "Čuvanje poruke za praznik...",
+  "Holiday message saved": "Poruka za praznik je sačuvana",
+  "Failed to save holiday message": "Čuvanje poruke za praznik nije uspelo"
 }
