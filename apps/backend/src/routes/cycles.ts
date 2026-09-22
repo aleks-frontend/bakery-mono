@@ -83,6 +83,13 @@ cyclesRouter.post("/", async (req, res) => {
     });
   }
 
+  // Non-seasonal articles get disabled mid-cycle when the baker notices one
+  // is being over-ordered without a capacity limit set — but that's meant as
+  // a temporary brake on the current cycle, not a permanent state, and it's
+  // easy to forget to flip back on. Reset them all to available when a new
+  // cycle starts so the disable never silently carries over.
+  await prisma.article.updateMany({ where: { isSeasonal: false }, data: { available: true } });
+
   const repeatingOrdersCloned = await cloneRepeatingOrdersIntoCycle(cycle.id);
   res.status(201).json({ cycle, repeatingOrdersCloned });
 });
