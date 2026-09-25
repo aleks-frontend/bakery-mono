@@ -63,3 +63,17 @@ The two frontends are deliberately kept as **separate apps**, not merged — dif
 **Linting**: one root `eslint.config.js` (flat config, ESLint 9 + `typescript-eslint`) applies React rules to `apps/admin-panel`/`apps/order-form` and Node globals to `apps/backend`/`packages/*`. Don't add per-app ESLint config or dependencies — extend the root config instead.
 
 **CRUD feedback (`react-hot-toast`)**: every create/update/delete mutation in both frontends must show pending/success/error feedback via `react-hot-toast`, not ad-hoc inline error state. Mount a single `<Toaster />` once per app at the root (see `apps/order-form/src/main.tsx` and `apps/admin-panel/src/main.tsx`). Wrap each mutation's call to the API client in `toast.promise(apiCall, { loading, success, error })` **inside the app-level mutation hook** (e.g. `apps/admin-panel/src/hooks/useCreateArticleMutation.ts`), not at the component call site — this way every caller gets consistent feedback for free, and `useMutation`'s own `onSuccess`/`onError`/query-invalidation logic still composes normally since `toast.promise` is a transparent passthrough of the wrapped promise's resolution/rejection. Component-level state for inline field-validation errors is still fine (e.g. required-field checks before submit); once a request is actually in flight, don't duplicate that with local pending/error state — the toast is the single source of truth for request-level feedback. Established in Phase 9's Articles CRUD chunk; apply the same pattern to Orders, Cycles, and Repeating Orders as their admin-panel wiring lands.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues on `aleks-frontend/bakery-mono`, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one root `CONTEXT.md` + `docs/adr/` (created lazily). See `docs/agents/domain.md`.
