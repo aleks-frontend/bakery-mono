@@ -1,5 +1,3 @@
-import { generateText } from "ai";
-import { google } from "@ai-sdk/google";
 import type { GenerateHolidayMessageResult } from "@bakery/schemas";
 
 // Free-tier eligible via Google AI Studio — plenty for a short structured JSON reply.
@@ -38,6 +36,11 @@ export async function generateHolidayMessages(
   if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
     throw new HolidayMessageGenerationError("GOOGLE_GENERATIVE_AI_API_KEY not set — AI generation is disabled");
   }
+
+  // Loaded lazily rather than at module scope — this whole SDK graph would
+  // otherwise sit resident in memory for the process's entire lifetime even
+  // though this function is only invoked a handful of times a month.
+  const [{ generateText }, { google }] = await Promise.all([import("ai"), import("@ai-sdk/google")]);
 
   const prompt = `You write short customer-facing holiday closure announcements for a bakery.
 
