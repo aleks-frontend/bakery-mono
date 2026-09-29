@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next"
 import toast from "react-hot-toast"
 import { Menu } from "lucide-react"
 import { LanguageSelector } from "./LanguageSelector"
-import { BackendHealthBadge } from "./BackendHealthBadge"
 import { Separator } from "./ui/separator"
 import { Button } from "./ui/button"
 import {
@@ -88,8 +87,6 @@ export function Header() {
 
             {/* >=1100px: everything inline in one row (unchanged from before). */}
             <div className="hidden items-center gap-3 nav-lg:flex">
-              <BackendHealthBadge />
-              <Separator orientation="vertical" className="h-6" />
               <LanguageSelector />
               <Separator orientation="vertical" className="h-6" />
               <span className="text-sm text-muted-foreground">{session.user.name}</span>
@@ -104,7 +101,6 @@ export function Header() {
               {renderNavItems(false)}
             </nav>
             <div className="hidden w-full items-center justify-end gap-3 nav-md:flex nav-lg:hidden">
-              <BackendHealthBadge />
               <LanguageSelector />
               <span className="text-sm text-muted-foreground">{session.user.name}</span>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
@@ -122,9 +118,6 @@ export function Header() {
               <DropdownMenuContent align="end" className="w-64 nav-md:hidden">
                 {renderNavItems(true)}
                 <DropdownMenuSeparator />
-                <div className="px-2 py-1.5">
-                  <BackendHealthBadge />
-                </div>
                 <div className="px-2 py-1.5">
                   <LanguageSelector />
                 </div>
