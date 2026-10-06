@@ -130,6 +130,7 @@
   "Name": "Név",
   "Price": "Ár",
   "Capacity per cycle": "Kapacitás ciklusonként",
+  "Remaining this cycle": "Hátralévő ebben a ciklusban",
   "Unlimited": "Korlátlan",
   "Leave empty for unlimited capacity": "Hagyja üresen a korlátlan kapacitáshoz",
   "Available now": "Jelenleg elérhető",

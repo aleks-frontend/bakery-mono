@@ -26,6 +26,14 @@ export function computeAvailability(
   return article.available && (article.capacityPerCycle == null || orderedQty < article.capacityPerCycle);
 }
 
+export function computeRemainingCapacity(
+  article: { capacityPerCycle: number | null },
+  orderedQty: number,
+): number | null {
+  if (article.capacityPerCycle == null) return null;
+  return Math.max(0, article.capacityPerCycle - orderedQty);
+}
+
 // Below this many remaining units, the public order form shows a "Limited
 // availability" hint. Deliberately not configurable per-article yet — the
 // baker hasn't asked for that, and the exact count is never exposed to

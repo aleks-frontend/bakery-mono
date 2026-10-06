@@ -14,6 +14,9 @@ export type Article = z.infer<typeof articleSchema>;
 
 export const articleWithAvailabilitySchema = articleSchema.extend({
   availableNow: z.boolean(),
+  // Null when capacityPerCycle is null (unlimited), otherwise capacityPerCycle
+  // minus what's already ordered this cycle, floored at 0.
+  remainingCapacity: z.number().int().nonnegative().nullable(),
 });
 export type ArticleWithAvailability = z.infer<typeof articleWithAvailabilitySchema>;
 

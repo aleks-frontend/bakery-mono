@@ -3,7 +3,12 @@ import { createArticleSchema, updateArticleSchema } from "@bakery/schemas";
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/requireAuth.js";
-import { computeAvailability, getCurrentCycle, getOrderedQuantitiesByArticle } from "../lib/availability.js";
+import {
+  computeAvailability,
+  computeRemainingCapacity,
+  getCurrentCycle,
+  getOrderedQuantitiesByArticle,
+} from "../lib/availability.js";
 import { isForeignKeyViolation } from "../lib/prismaErrors.js";
 
 export const articlesRouter = Router();
@@ -24,6 +29,7 @@ articlesRouter.get("/", async (_req, res) => {
     articles.map((article) => ({
       ...article,
       availableNow: computeAvailability(article, orderedQty.get(article.id) ?? 0),
+      remainingCapacity: computeRemainingCapacity(article, orderedQty.get(article.id) ?? 0),
     })),
   );
 });

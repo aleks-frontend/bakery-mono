@@ -25,6 +25,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useUpdateArticleAvailabilityMutation } from "@/hooks/useUpdateArticleMutation"
 import { cn } from "@/lib/utils"
+import { CapacityBar } from "@/components/CapacityBar"
 
 interface ArticlesTableProps {
   articles: ArticleWithAvailability[]
@@ -150,15 +151,14 @@ export function ArticlesTable({
         ),
       },
       {
-        accessorKey: "capacityPerCycle",
-        header: t("Capacity per cycle"),
+        accessorKey: "remainingCapacity",
+        header: t("Remaining this cycle"),
         cell: ({ row }) => {
-          const capacity = row.original.capacityPerCycle
-          return (
-            <div className="text-muted-foreground">
-              {capacity == null ? t("Unlimited") : capacity}
-            </div>
-          )
+          const { capacityPerCycle, remainingCapacity } = row.original
+          if (capacityPerCycle == null || remainingCapacity == null) {
+            return <div className="text-muted-foreground">{t("Unlimited")}</div>
+          }
+          return <CapacityBar capacity={capacityPerCycle} remaining={remainingCapacity} />
         },
       },
       {

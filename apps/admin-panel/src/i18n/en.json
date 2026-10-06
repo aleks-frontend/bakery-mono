@@ -130,6 +130,7 @@
   "Name": "Name",
   "Price": "Price",
   "Capacity per cycle": "Capacity per cycle",
+  "Remaining this cycle": "Remaining this cycle",
   "Unlimited": "Unlimited",
   "Leave empty for unlimited capacity": "Leave empty for unlimited capacity",
   "Available now": "Available now",

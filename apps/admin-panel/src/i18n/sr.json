@@ -130,6 +130,7 @@
   "Name": "Naziv",
   "Price": "Cena",
   "Capacity per cycle": "Kapacitet po ciklusu",
+  "Remaining this cycle": "Preostalo u ciklusu",
   "Unlimited": "Neograničeno",
   "Leave empty for unlimited capacity": "Ostavite prazno za neograničen kapacitet",
   "Available now": "Trenutno dostupno",
