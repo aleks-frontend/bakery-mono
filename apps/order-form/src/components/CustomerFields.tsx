@@ -16,7 +16,7 @@ interface CustomerFieldsProps {
 }
 
 const LOCATION_OPTIONS = [
-  { value: "Subotica", labelKey: "Subotica" as const },
+  // Subotica temporarily removed — bring back next cycle
   { value: "Hajdukovo", labelKey: "Hajdukovo" as const },
 ] as const;
 
