@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useArticlesQuery } from "@/hooks/useArticlesQuery";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { OrderStatusBanner } from "@/components/OrderStatusBanner";
+import { SuboticaNoticeBanner } from "@/components/SuboticaNoticeBanner";
 import { OrderForm } from "@/components/OrderForm";
 import { Spinner } from "@/components/Spinner";
 
@@ -52,12 +53,15 @@ function App() {
           <Spinner />
         </div>
       ) : !isError ? (
-        <OrderForm
-          articles={articles}
-          outOfStockArticles={outOfStockArticles}
-          acceptingOrders={acceptingOrders}
-          lowStockThreshold={data?.lowStockThreshold ?? 5}
-        />
+        <>
+          {acceptingOrders && <SuboticaNoticeBanner />}
+          <OrderForm
+            articles={articles}
+            outOfStockArticles={outOfStockArticles}
+            acceptingOrders={acceptingOrders}
+            lowStockThreshold={data?.lowStockThreshold ?? 5}
+          />
+        </>
       ) : null}
     </>
   );

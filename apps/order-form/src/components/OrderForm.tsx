@@ -13,7 +13,7 @@ import {
   findArticleById,
 } from "@/utils/calculations";
 import { usePersistedCustomer } from "@/hooks/usePersistedCustomer";
-import { CustomerFields } from "./CustomerFields";
+import { CustomerFields, VALID_LOCATION_VALUES } from "./CustomerFields";
 import { OrderItems } from "./OrderItems";
 import { OrderSummaryModal } from "./OrderSummaryModal";
 
@@ -53,7 +53,10 @@ export function OrderForm({ articles, outOfStockArticles, acceptingOrders, lowSt
       recipient: persisted?.recipient ?? "",
       phone: persisted?.phone ?? "",
       email: persisted?.email ?? "",
-      location: persisted?.location ?? "",
+      location:
+        persisted?.location && VALID_LOCATION_VALUES.includes(persisted.location)
+          ? persisted.location
+          : "",
       remark: "",
       repeat: false,
       items: firstArticleId ? [defaultItem(firstArticleId)] : [],
@@ -83,7 +86,9 @@ export function OrderForm({ articles, outOfStockArticles, acceptingOrders, lowSt
     if (persisted?.recipient) setValue("recipient", persisted.recipient);
     if (persisted?.phone) setValue("phone", persisted.phone);
     if (persisted?.email) setValue("email", persisted.email ?? "");
-    if (persisted?.location) setValue("location", persisted.location);
+    if (persisted?.location && VALID_LOCATION_VALUES.includes(persisted.location)) {
+      setValue("location", persisted.location);
+    }
   }, [loadPersistedCustomer, setValue]);
 
   useEffect(() => {

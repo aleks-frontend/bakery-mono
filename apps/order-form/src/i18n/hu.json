@@ -60,5 +60,7 @@
   "No longer available": "Már nem elérhető",
   "{{article}} was removed — no longer available": "{{article}} eltávolítva — már nem elérhető",
   "This item": "Ez a termék",
-  "Your order was updated based on current availability — please review it and submit again.": "A rendelését frissítettük az aktuális elérhetőség alapján — kérjük, ellenőrizze, és küldje el újra."
+  "Your order was updated based on current availability — please review it and submit again.": "A rendelését frissítettük az aktuális elérhetőség alapján — kérjük, ellenőrizze, és küldje el újra.",
+  "No deliveries to Subotica this week — orders can only be picked up in person in Hajdukovo. 🚚": "Ezen a héten nincs kiszállítás Szabadkára — a rendeléseket kizárólag Hajdújáráson, személyesen lehet átvenni. 🚚",
+  "This field is required.": "Ez a mező kötelező."
 }

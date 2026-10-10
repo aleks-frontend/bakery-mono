@@ -8,6 +8,7 @@ import {
 } from "react-hook-form";
 import Select from "react-select";
 import type { OrderFormValues } from "@/schemas/orderSchemas";
+import { SUBOTICA_DELIVERY_PAUSED } from "@/config/temporaryNotices";
 
 interface CustomerFieldsProps {
   register: UseFormRegister<OrderFormValues>;
@@ -15,10 +16,17 @@ interface CustomerFieldsProps {
   errors: FieldErrors<OrderFormValues>;
 }
 
-const LOCATION_OPTIONS = [
-  // Subotica temporarily removed — bring back next cycle
-  { value: "Hajdukovo", labelKey: "Hajdukovo" as const },
-] as const;
+const LOCATION_OPTIONS = SUBOTICA_DELIVERY_PAUSED
+  ? ([{ value: "Hajdukovo", labelKey: "Hajdukovo" as const }] as const)
+  : ([
+      { value: "Subotica", labelKey: "Subotica" as const },
+      { value: "Hajdukovo", labelKey: "Hajdukovo" as const },
+    ] as const);
+
+/** Locations currently selectable in the dropdown — used to discard a stale persisted value (e.g. a saved "Subotica" from before it was paused) rather than silently submitting it. */
+export const VALID_LOCATION_VALUES: readonly string[] = LOCATION_OPTIONS.map(
+  (opt) => opt.value
+);
 
 export function CustomerFields({
   register,
@@ -42,11 +50,13 @@ export function CustomerFields({
         <input
           type="text"
           {...register("recipient")}
-          className="mt-1.5 w-full py-2.5 px-3 rounded-[10px] border border-bakery-border text-[0.95rem] transition-colors focus:outline-none focus:border-bakery-primary focus:shadow-focus bg-white"
+          className={`mt-1.5 w-full py-2.5 px-3 rounded-[10px] border text-[0.95rem] transition-colors focus:outline-none focus:border-bakery-primary focus:shadow-focus bg-white ${
+            errors.recipient ? "border-bakery-destructive" : "border-bakery-border"
+          }`}
         />
         {errors.recipient?.message && (
           <span className="text-bakery-destructive text-sm mt-1 block">
-            {errors.recipient.message}
+            {t(errors.recipient.message)}
           </span>
         )}
       </label>
@@ -56,11 +66,13 @@ export function CustomerFields({
         <input
           type="tel"
           {...register("phone")}
-          className="mt-1.5 w-full py-2.5 px-3 rounded-[10px] border border-bakery-border text-[0.95rem] transition-colors focus:outline-none focus:border-bakery-primary focus:shadow-focus bg-white"
+          className={`mt-1.5 w-full py-2.5 px-3 rounded-[10px] border text-[0.95rem] transition-colors focus:outline-none focus:border-bakery-primary focus:shadow-focus bg-white ${
+            errors.phone ? "border-bakery-destructive" : "border-bakery-border"
+          }`}
         />
         {errors.phone?.message && (
           <span className="text-bakery-destructive text-sm mt-1 block">
-            {errors.phone.message}
+            {t(errors.phone.message)}
           </span>
         )}
       </label>
@@ -101,7 +113,7 @@ export function CustomerFields({
                   ...base,
                   minHeight: 42,
                   borderRadius: 10,
-                  borderColor: "var(--bakery-border, #e5e7eb)",
+                  borderColor: errors.location ? "#b3452c" : "#e6d5be",
                 }),
               }}
             />
@@ -109,7 +121,7 @@ export function CustomerFields({
         />
         {errors.location?.message && (
           <span className="text-bakery-destructive text-sm mt-1 block">
-            {errors.location.message}
+            {t(errors.location.message)}
           </span>
         )}
       </label>
