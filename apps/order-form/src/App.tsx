@@ -2,7 +2,6 @@ import { useTranslation } from "react-i18next";
 import { useArticlesQuery } from "@/hooks/useArticlesQuery";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { OrderStatusBanner } from "@/components/OrderStatusBanner";
-import { SuboticaNoticeBanner } from "@/components/SuboticaNoticeBanner";
 import { OrderForm } from "@/components/OrderForm";
 import { Spinner } from "@/components/Spinner";
 
@@ -54,7 +53,6 @@ function App() {
         </div>
       ) : !isError ? (
         <>
-          {acceptingOrders && <SuboticaNoticeBanner />}
           <OrderForm
             articles={articles}
             outOfStockArticles={outOfStockArticles}

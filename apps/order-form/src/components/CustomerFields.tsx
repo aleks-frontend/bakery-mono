@@ -8,7 +8,6 @@ import {
 } from "react-hook-form";
 import Select from "react-select";
 import type { OrderFormValues } from "@/schemas/orderSchemas";
-import { SUBOTICA_DELIVERY_PAUSED } from "@/config/temporaryNotices";
 
 interface CustomerFieldsProps {
   register: UseFormRegister<OrderFormValues>;
@@ -16,14 +15,12 @@ interface CustomerFieldsProps {
   errors: FieldErrors<OrderFormValues>;
 }
 
-const LOCATION_OPTIONS = SUBOTICA_DELIVERY_PAUSED
-  ? ([{ value: "Hajdukovo", labelKey: "Hajdukovo" as const }] as const)
-  : ([
-      { value: "Subotica", labelKey: "Subotica" as const },
-      { value: "Hajdukovo", labelKey: "Hajdukovo" as const },
-    ] as const);
+const LOCATION_OPTIONS = [
+  { value: "Subotica", labelKey: "Subotica" as const },
+  { value: "Hajdukovo", labelKey: "Hajdukovo" as const },
+] as const;
 
-/** Locations currently selectable in the dropdown — used to discard a stale persisted value (e.g. a saved "Subotica" from before it was paused) rather than silently submitting it. */
+/** Locations currently selectable in the dropdown — used to discard a stale persisted value rather than silently submitting it. */
 export const VALID_LOCATION_VALUES: readonly string[] = LOCATION_OPTIONS.map(
   (opt) => opt.value
 );
