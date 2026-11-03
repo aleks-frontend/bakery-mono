@@ -20,6 +20,10 @@ Sentry.init({
     // opening the order link from an in-app browser; not actionable on our end.
     /Error invoking postMessage: Java object is gone/,
     /sendDebugNative/,
+    // iOS counterpart of the above: the in-app browser's injected WKWebView
+    // bridge throws when its native side doesn't answer a postMessage. We
+    // never call postMessage ourselves.
+    /WKWebView API client did not respond to this postMessage/,
   ],
 });
 
