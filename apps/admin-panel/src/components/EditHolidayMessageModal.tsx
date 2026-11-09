@@ -8,11 +8,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Loader2, Sparkles } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import type { Cycle } from "@bakery/api-client"
+import { useIsMutating } from "@tanstack/react-query"
 import { useUpdateHolidayMessageMutation } from "@/hooks/useUpdateHolidayMessageMutation"
-import { useGenerateHolidayMessageMutation } from "@/hooks/useGenerateHolidayMessageMutation"
+import { generateHolidayMessageMutationKey } from "@/hooks/useGenerateHolidayMessageMutation"
+import { HolidayMessageEditor, type HolidayMessages } from "@/components/HolidayMessageEditor"
+
+const emptyHolidayMessages: HolidayMessages = { en: "", sr: "", hu: "" }
 
 interface EditHolidayMessageModalProps {
   open: boolean
@@ -20,16 +24,17 @@ interface EditHolidayMessageModalProps {
   cycle: Cycle
 }
 
-const textareaClassName =
-  "mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-white resize-none disabled:opacity-50 disabled:cursor-not-allowed"
-
 export function EditHolidayMessageModal({ open, onOpenChange, cycle }: EditHolidayMessageModalProps) {
   const { t } = useTranslation()
   const updateMutation = useUpdateHolidayMessageMutation()
-  const generateMutation = useGenerateHolidayMessageMutation()
+  const isGenerating = useIsMutating({ mutationKey: generateHolidayMessageMutationKey }) > 0
+  const isBusy = updateMutation.isPending || isGenerating
 
-  const [messages, setMessages] = useState({ en: "", sr: "", hu: "" })
-  const [instruction, setInstruction] = useState("")
+  const [messages, setMessages] = useState(emptyHolidayMessages)
+  // A saved message opens straight into Manual for a quick fix; otherwise AI.
+  const hasSavedMessage = [cycle.holidayMessageEn, cycle.holidayMessageSr, cycle.holidayMessageHu].some(
+    (message) => Boolean(message?.trim())
+  )
 
   // Re-seed from the cycle every time the dialog opens, so a cancelled edit
   // never leaks into the next open.
@@ -40,21 +45,8 @@ export function EditHolidayMessageModal({ open, onOpenChange, cycle }: EditHolid
         sr: cycle.holidayMessageSr ?? "",
         hu: cycle.holidayMessageHu ?? "",
       })
-      setInstruction("")
     }
   }, [open, cycle])
-
-  const hasMessages = Boolean(messages.en.trim() || messages.sr.trim() || messages.hu.trim())
-  const isBusy = updateMutation.isPending || generateMutation.isPending
-
-  const handleGenerate = () => {
-    if (!instruction.trim() || !cycle.nextCycleStartDate) return
-
-    generateMutation.mutate(
-      { instruction: instruction.trim(), nextCycleStartDate: cycle.nextCycleStartDate },
-      { onSuccess: (result) => setMessages({ en: result.en, sr: result.sr, hu: result.hu }) }
-    )
-  }
 
   const handleSubmit = () => {
     updateMutation.mutate(
@@ -70,14 +62,9 @@ export function EditHolidayMessageModal({ open, onOpenChange, cycle }: EditHolid
     )
   }
 
-  const fields = [
-    { key: "en", label: t("English") },
-    { key: "sr", label: t("Serbian") },
-    { key: "hu", label: t("Hungarian") },
-  ] as const
-
+  // Escape/overlay can't close it mid-request: unmounting would drop the suggestion.
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(next) => { if (!isBusy) onOpenChange(next) }}>
       <DialogContent className="max-w-xl">
         <DialogHeader className="pr-10">
           <DialogTitle>{t("Edit Holiday Message")}</DialogTitle>
@@ -87,50 +74,13 @@ export function EditHolidayMessageModal({ open, onOpenChange, cycle }: EditHolid
         </DialogHeader>
 
         <form autoComplete="off" onSubmit={(e) => e.preventDefault()} className="space-y-4 py-2">
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">{t("Holiday message instructions")}</label>
-            <textarea
-              value={instruction}
-              onChange={(e) => setInstruction(e.target.value)}
-              rows={2}
-              disabled={isBusy}
-              placeholder={t("Describe the holiday in any language, e.g. \"closed for Christmas, back Jan 5th\"")}
-              className={textareaClassName}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              disabled={!instruction.trim() || !cycle.nextCycleStartDate || isBusy}
-              onClick={handleGenerate}
-            >
-              {generateMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("Generating...")}
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  {hasMessages ? t("Regenerate holiday messages") : t("Generate holiday messages")}
-                </>
-              )}
-            </Button>
-          </div>
-
-          {fields.map(({ key, label }) => (
-            <div key={key}>
-              <label className="text-xs font-medium text-muted-foreground">{label}</label>
-              <textarea
-                value={messages[key]}
-                onChange={(e) => setMessages((prev) => ({ ...prev, [key]: e.target.value }))}
-                rows={4}
-                disabled={isBusy}
-                className={textareaClassName}
-              />
-            </div>
-          ))}
+          <HolidayMessageEditor
+            value={messages}
+            onChange={setMessages}
+            nextCycleStartDate={cycle.nextCycleStartDate}
+            defaultMode={hasSavedMessage ? "manual" : "ai"}
+            disabled={updateMutation.isPending}
+          />
         </form>
 
         <DialogFooter className="gap-2 mt-2 border-t pt-4">

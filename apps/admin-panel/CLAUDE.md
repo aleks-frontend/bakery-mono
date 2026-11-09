@@ -9,9 +9,10 @@ npm run dev       # Start dev server at http://localhost:5173
 npm run build     # tsc && vite build
 npm run lint      # ESLint with --max-warnings 0 (zero warnings allowed)
 npm run preview   # Preview production build
+npm test          # vitest run (jsdom + React Testing Library; setup in src/test/setup.ts)
 ```
 
-No test runner is configured.
+Tests sit next to the component as `*.test.tsx`. Mock only the API client call (e.g. `vi.spyOn(cyclesClient, ...)`), render inside a `QueryClientProvider`, and query by the English strings.
 
 ## Environment
 

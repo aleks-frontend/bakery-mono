@@ -10,12 +10,16 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
-import { Loader2, Sparkles } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
 import { useNextCycleStartSuggestionQuery } from "@/hooks/useNextCycleStartSuggestionQuery"
 import { useCloseCycleMutation } from "@/hooks/useCloseCycleMutation"
-import { useGenerateHolidayMessageMutation } from "@/hooks/useGenerateHolidayMessageMutation"
+import { useIsMutating } from "@tanstack/react-query"
+import { generateHolidayMessageMutationKey } from "@/hooks/useGenerateHolidayMessageMutation"
+import { HolidayMessageEditor, type HolidayMessages } from "@/components/HolidayMessageEditor"
+
+const emptyHolidayMessages: HolidayMessages = { en: "", sr: "", hu: "" }
 
 interface CloseCycleModalProps {
   open: boolean
@@ -26,10 +30,7 @@ interface CloseCycleModalProps {
 
 const emptyForm = {
   nextCycleStartDate: "",
-  holidayInstruction: "",
-  holidayMessageEn: "",
-  holidayMessageSr: "",
-  holidayMessageHu: "",
+  holidayMessage: emptyHolidayMessages,
 }
 
 // nextCycleStartDate is a calendar date, not a real-world instant, so it's
@@ -52,7 +53,10 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
   const { t } = useTranslation()
   const { data: suggestion, isLoading: suggestionLoading } = useNextCycleStartSuggestionQuery(open)
   const closeMutation = useCloseCycleMutation()
-  const generateMutation = useGenerateHolidayMessageMutation()
+  const isGenerating = useIsMutating({ mutationKey: generateHolidayMessageMutationKey }) > 0
+  // Locked while closing or generating: closing mid-generation would drop the
+  // suggestion, and the date is what the suggestion is written for.
+  const isBusy = closeMutation.isPending || isGenerating
 
   const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -62,10 +66,7 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
     if (open && suggestion) {
       setForm({
         nextCycleStartDate: toDateInputValue(suggestion.nextCycleStartDate),
-        holidayInstruction: "",
-        holidayMessageEn: "",
-        holidayMessageSr: "",
-        holidayMessageHu: "",
+        holidayMessage: emptyHolidayMessages,
       })
       setErrors({})
       setHolidayMessageEnabled(false)
@@ -80,45 +81,16 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
     }
   }, [open])
 
+  // Turning the toggle off clears the messages; the instruction goes with the
+  // editor, which unmounts.
   const handleHolidayMessageToggle = (enabled: boolean) => {
     setHolidayMessageEnabled(enabled)
     if (!enabled) {
-      setForm((prev) => ({
-        ...prev,
-        holidayInstruction: "",
-        holidayMessageEn: "",
-        holidayMessageSr: "",
-        holidayMessageHu: "",
-      }))
+      setForm((prev) => ({ ...prev, holidayMessage: emptyHolidayMessages }))
     }
   }
 
-  const hasGeneratedMessages = Boolean(
-    form.holidayMessageEn.trim() || form.holidayMessageSr.trim() || form.holidayMessageHu.trim()
-  )
-
-  const handleGenerate = () => {
-    if (!form.holidayInstruction.trim() || !form.nextCycleStartDate) return
-
-    generateMutation.mutate(
-      {
-        instruction: form.holidayInstruction.trim(),
-        nextCycleStartDate: fromDateInputValue(form.nextCycleStartDate),
-      },
-      {
-        onSuccess: (result) => {
-          setForm((prev) => ({
-            ...prev,
-            holidayMessageEn: result.en,
-            holidayMessageSr: result.sr,
-            holidayMessageHu: result.hu,
-          }))
-        },
-      }
-    )
-  }
-
-  const setField = (field: keyof typeof emptyForm, value: string) => {
+  const setField = (field: "nextCycleStartDate", value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
     setErrors((prev) => { const next = { ...prev }; delete next[field]; return next })
   }
@@ -139,9 +111,9 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
         id: cycleId,
         input: {
           nextCycleStartDate: fromDateInputValue(form.nextCycleStartDate),
-          holidayMessageEn: form.holidayMessageEn.trim() || null,
-          holidayMessageSr: form.holidayMessageSr.trim() || null,
-          holidayMessageHu: form.holidayMessageHu.trim() || null,
+          holidayMessageEn: form.holidayMessage.en.trim() || null,
+          holidayMessageSr: form.holidayMessage.sr.trim() || null,
+          holidayMessageHu: form.holidayMessage.hu.trim() || null,
         },
       },
       { onSuccess: () => onOpenChange(false) }
@@ -149,7 +121,7 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(next) => { if (!isBusy) onOpenChange(next) }}>
       <DialogContent className="max-w-xl">
         <DialogHeader className="pr-10">
           <DialogTitle>{t("Confirm Close Ordering")}</DialogTitle>
@@ -173,6 +145,7 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
                 className={cn("mt-1 bg-white", errors.nextCycleStartDate && "border-destructive")}
                 type="date"
                 value={form.nextCycleStartDate}
+                disabled={isBusy}
                 onChange={(e) => setField("nextCycleStartDate", e.target.value)}
               />
               {errors.nextCycleStartDate && (
@@ -189,6 +162,7 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
                 <Switch
                   id="holiday-message-toggle"
                   checked={holidayMessageEnabled}
+                  disabled={isBusy}
                   onCheckedChange={handleHolidayMessageToggle}
                 />
               </div>
@@ -199,76 +173,15 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
                     {t("Shown to customers while ordering is closed (optional)")}
                   </p>
 
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground">
-                      {t("Holiday message instructions")}
-                    </label>
-                    <textarea
-                      value={form.holidayInstruction}
-                      onChange={(e) => setField("holidayInstruction", e.target.value)}
-                      rows={2}
-                      disabled={generateMutation.isPending}
-                      placeholder={t(
-                        "Describe the holiday in any language, e.g. \"closed for Christmas, back Jan 5th\""
-                      )}
-                      className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-white resize-none disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="mt-2"
-                      disabled={
-                        !form.holidayInstruction.trim() || !form.nextCycleStartDate || generateMutation.isPending
-                      }
-                      onClick={handleGenerate}
-                    >
-                      {generateMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          {t("Generating...")}
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="mr-2 h-4 w-4" />
-                          {hasGeneratedMessages ? t("Regenerate holiday messages") : t("Generate holiday messages")}
-                        </>
-                      )}
-                    </Button>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground">{t("English")}</label>
-                    <textarea
-                      value={form.holidayMessageEn}
-                      onChange={(e) => setField("holidayMessageEn", e.target.value)}
-                      rows={4}
-                      disabled={generateMutation.isPending}
-                      className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-white resize-none disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground">{t("Serbian")}</label>
-                    <textarea
-                      value={form.holidayMessageSr}
-                      onChange={(e) => setField("holidayMessageSr", e.target.value)}
-                      rows={4}
-                      disabled={generateMutation.isPending}
-                      className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-white resize-none disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground">{t("Hungarian")}</label>
-                    <textarea
-                      value={form.holidayMessageHu}
-                      onChange={(e) => setField("holidayMessageHu", e.target.value)}
-                      rows={4}
-                      disabled={generateMutation.isPending}
-                      className="mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-white resize-none disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                  </div>
+                  <HolidayMessageEditor
+                    value={form.holidayMessage}
+                    onChange={(holidayMessage) => setForm((prev) => ({ ...prev, holidayMessage }))}
+                    nextCycleStartDate={
+                      form.nextCycleStartDate ? fromDateInputValue(form.nextCycleStartDate) : null
+                    }
+                    defaultMode="ai"
+                    disabled={closeMutation.isPending}
+                  />
                 </>
               )}
             </div>
@@ -276,12 +189,12 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
         )}
 
         <DialogFooter className="gap-2 mt-2 border-t pt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={closeMutation.isPending}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isBusy}>
             {t("Cancel")}
           </Button>
           <Button
             variant="default"
-            disabled={closeMutation.isPending || suggestionLoading}
+            disabled={isBusy || suggestionLoading}
             onClick={handleSubmit}
           >
             {closeMutation.isPending ? (

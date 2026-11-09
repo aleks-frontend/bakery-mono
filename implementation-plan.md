@@ -31,6 +31,7 @@ Admin panel's `Header.tsx` collapses `Dashboard`/`Orders`/`Articles`/`Cycles`/`R
 `tech-stack.md` already names Vitest + Supertest for backend/frontend unit testing, but neither is scaffolded yet. No end-to-end tool has been chosen at all. This phase covers the whole monorepo, not just new code going forward.
 
 - [ ] Scaffold Vitest in `apps/backend`, `apps/admin-panel`, `apps/order-form`, and `packages/*`, wired into each workspace's `package.json` and the root `npm test`
+  - Done for `apps/backend` (Node) and `apps/admin-panel` (jsdom + React Testing Library), with the root `npm test`, as part of the holiday-message tests (#12). Vitest is pinned to 3.x while the admin panel is on Vite 5. Still to do: `apps/order-form` and `packages/*`.
 - [ ] Backend: Supertest-driven route tests for every router (`articles`, `cycles`, `orders`, `repeating-orders`, `public`, `dashboard`) plus unit tests for the pure/near-pure lib functions (`orderPricing`, `availability`, `cycleDates`, `dashboardStats`, `email`)
 - [ ] Frontend: component/hook unit tests for both apps' critical flows (order creation/edit, article CRUD, cycle transitions, repeating-order cloning, dashboard rendering)
 - [ ] Add an end-to-end tool — suggest **Playwright** (strong Vite/React support, can drive both `admin-panel` and `order-form` against a real running backend instance), open to Cypress if preferred
