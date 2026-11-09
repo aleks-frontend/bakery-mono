@@ -31,12 +31,13 @@ npm run lint                       # single flat ESLint config, covers all apps/
 npm run format                     # prettier --write .
 npm run typecheck                  # tsc --noEmit in every workspace
 npm run build                      # build in every workspace that has a build script
+npm test                           # vitest run in every workspace that has a test script
 
 npm run <script> -w @bakery/<name> # run a script in one workspace directly,
                                     # e.g. npm run build -w @bakery/schemas
 ```
 
-`docker-compose.yml` at the root runs Postgres + the backend for local dev (`docker compose up`) — untested on this machine since Docker isn't installed here; local dev currently uses a native Postgres install instead (see `apps/backend/.env` for the `DATABASE_URL`). No test runner is configured yet (Vitest/Supertest are planned per `tech-stack.md` but not yet scaffolded).
+`docker-compose.yml` at the root runs Postgres + the backend for local dev (`docker compose up`) — untested on this machine since Docker isn't installed here; local dev currently uses a native Postgres install instead (see `apps/backend/.env` for the `DATABASE_URL`). Vitest is set up in `apps/backend` (Node) and `apps/admin-panel` (jsdom + React Testing Library); `npm test` runs every workspace's `test` script, and `npx vitest run <file>` inside a workspace runs one file. Tests sit next to their module as `*.test.ts(x)`; the backend builds with `tsconfig.build.json` so they stay out of `dist`. Vitest is pinned to 3.x because the admin panel is still on Vite 5. Supertest and the order-form/packages setup are still Phase 16 work.
 
 **Prisma**: schema lives at `apps/backend/prisma/schema.prisma`, config at `apps/backend/prisma.config.ts`. Prisma 7 generates the client into `apps/backend/src/generated/prisma` (gitignored, regenerated via the `postinstall` script) rather than `node_modules/@prisma/client`, and requires a driver adapter (`@prisma/adapter-pg`) passed to `new PrismaClient({ adapter })` — see `src/lib/prisma.ts`. Run migrations with `npm run prisma:migrate -w @bakery/backend`, seed sample data with `npm run prisma:seed -w @bakery/backend` (defined in `prisma.config.ts`'s `migrations.seed`, not `package.json`'s `prisma.seed` — Prisma 7 wants it in the config file). The Better Auth tables (`user`/`session`/`account`/`verification`) were generated via `npx @better-auth/cli generate --config src/lib/auth.ts`, not hand-written — regenerate the same way if `auth.ts`'s config changes (e.g. adding a plugin) rather than editing those models by hand. One hand-written addition on top of what Prisma generates: a partial unique index in the migration SQL enforcing at most one `Cycle` with `status = 'OPEN'` — Prisma's schema language has no syntax for partial indexes, so this doesn't exist in `schema.prisma` itself, only in the migration file.
 
