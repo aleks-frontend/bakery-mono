@@ -96,7 +96,11 @@ export function HolidayMessageEditor({
 
   return (
     <>
-      <div role="group" aria-label={t("Holiday message mode")} className="inline-flex rounded-md bg-muted p-1">
+      <div
+        role="group"
+        aria-label={t("Holiday message mode")}
+        className="inline-flex rounded-md border border-border bg-muted p-1"
+      >
         {modes.map(({ key, label, icon: Icon }) => (
           <Button
             key={key}
@@ -109,8 +113,8 @@ export function HolidayMessageEditor({
             className={cn(
               "px-3",
               mode === key
-                ? "bg-background text-foreground shadow-sm hover:bg-background"
-                : "text-muted-foreground"
+                ? "bg-card text-foreground font-semibold shadow ring-1 ring-border hover:bg-card"
+                : "text-muted-foreground hover:bg-transparent hover:text-foreground"
             )}
           >
             <Icon className="mr-1.5 h-3.5 w-3.5" />
@@ -135,7 +139,7 @@ export function HolidayMessageEditor({
               type="button"
               variant="outline"
               size="sm"
-              className="mt-2"
+              className="mt-2 border-violet-500 bg-violet-50 text-violet-700 shadow-sm hover:bg-violet-100 hover:text-violet-800"
               disabled={!instruction.trim() || !nextCycleStartDate || isBusy}
               onClick={handleGenerate}
             >
