@@ -1,8 +1,9 @@
-import type { GenerateHolidayMessageResult } from "@bakery/schemas";
-
-// Free-tier eligible via Google AI Studio — plenty for a short structured JSON reply.
-// gemini-2.0-flash was sunset; Google's API error pointed at this replacement.
-const MODEL = "gemini-3.6-flash";
+import type { LanguageModel } from "ai";
+import { z } from "zod";
+import {
+  generateHolidayMessageResponseSchema,
+  type GenerateHolidayMessageResult,
+} from "@bakery/schemas";
 
 // Same "New orders will be available from {{date}} 💛" / "Until then, check
 // out our offer..." shape shown by apps/order-form's OrderStatusBanner when
@@ -11,69 +12,120 @@ const MODEL = "gemini-3.6-flash";
 const STANDARD_MESSAGE_PATTERN =
   "New orders will be available from [date] 💛 Until then, check out our offer and learn about how we prepare our products.";
 
-export class HolidayMessageGenerationError extends Error {}
+const INSTRUCTIONS = `You write short customer-facing holiday closure announcements for a bakery.
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric", timeZone: "UTC" });
-}
-
-function extractJson(text: string): unknown {
-  // Models occasionally wrap JSON in a ```json fence despite instructions not
-  // to — strip that before parsing rather than failing the whole request.
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-  const jsonText = fenced ? fenced[1] : text;
-  try {
-    return JSON.parse(jsonText);
-  } catch {
-    throw new HolidayMessageGenerationError("AI response was not valid JSON");
-  }
-}
-
-export async function generateHolidayMessages(
-  instruction: string,
-  nextCycleStartDate: Date,
-): Promise<GenerateHolidayMessageResult> {
-  if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-    throw new HolidayMessageGenerationError("GOOGLE_GENERATIVE_AI_API_KEY not set — AI generation is disabled");
-  }
-
-  // Loaded lazily rather than at module scope — this whole SDK graph would
-  // otherwise sit resident in memory for the process's entire lifetime even
-  // though this function is only invoked a handful of times a month.
-  const [{ generateText }, { google }] = await Promise.all([import("ai"), import("@ai-sdk/google")]);
-
-  const prompt = `You write short customer-facing holiday closure announcements for a bakery.
-
-The baker will give you an instruction describing a holiday closure, written in English, Serbian, or Hungarian. Detect that language, then write the SAME message in all three languages: English (en), Serbian (sr), Hungarian (hu).
-
-Baker's instruction: "${instruction}"
-
-The next order window opens on: ${formatDate(nextCycleStartDate)}
+The baker describes a holiday closure in English, Serbian, or Hungarian, and gives the date the next order window opens. Detect the language of the description, then write the SAME message in all three languages: English (en), Serbian (sr), Hungarian (hu).
 
 Style to match (this is the bakery's standard, non-holiday closed-ordering message, shown to customers when no holiday message is set — match its warm, friendly, brief tone and its use of the reopening date):
 "${STANDARD_MESSAGE_PATTERN}"
 
-Write a warm, friendly holiday version instead: mention the reason for closing (from the instruction), state that new orders open again on the date above, and use 1-3 emoji that fit the specific holiday's spirit (not necessarily 💛). Keep each message to 1-3 short sentences, no markdown formatting, no placeholders.
+Write a warm, friendly holiday version instead:
+- Mention the reason for closing, taken from the baker's description.
+- State that new orders open again on the given date, written the way each language naturally writes dates (e.g. "9 January 2027", "9. januar 2027.", "2027. január 9.").
+- Use 1-3 emoji that fit the specific holiday's spirit (not necessarily 💛).
+- Keep each message to 1-3 short sentences, with no markdown formatting and no placeholders.`;
 
-Respond with ONLY a raw JSON object, no code fences, no commentary, in exactly this shape:
-{"en": "...", "sr": "...", "hu": "..."}`;
+// The shared response shape, tightened for what the model must return.
+const holidayMessagesSchema = generateHolidayMessageResponseSchema.extend({
+  en: z.string().trim().min(1).describe("The message in English"),
+  sr: z.string().trim().min(1).describe("The message in Serbian (Latin script)"),
+  hu: z.string().trim().min(1).describe("The message in Hungarian"),
+});
 
-  const { text } = await generateText({ model: google(MODEL), prompt });
+/** Thrown for anything that stops a generation; the route answers it with a 502. */
+export class HolidayMessageGenerationError extends Error {}
 
-  const parsed = extractJson(text);
-  const result: Partial<GenerateHolidayMessageResult> =
-    parsed && typeof parsed === "object" ? (parsed as Partial<GenerateHolidayMessageResult>) : {};
+function formatDate(date: Date): string {
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
 
-  if (
-    typeof result.en !== "string" ||
-    typeof result.sr !== "string" ||
-    typeof result.hu !== "string" ||
-    !result.en.trim() ||
-    !result.sr.trim() ||
-    !result.hu.trim()
-  ) {
-    throw new HolidayMessageGenerationError("AI response was missing one or more languages");
+/** The providers `AI_HOLIDAY_MESSAGE_MODEL` may name, each with the env var holding its key. */
+const PROVIDERS = {
+  openai: {
+    keyVar: "OPENAI_API_KEY",
+    async model(apiKey: string, modelId: string): Promise<LanguageModel> {
+      const { createOpenAI } = await import("@ai-sdk/openai");
+      return createOpenAI({ apiKey })(modelId);
+    },
+  },
+} as const;
+
+/**
+ * The model `AI_HOLIDAY_MESSAGE_MODEL` (`provider:model`, a dated snapshot)
+ * and that provider's key configure. Anything missing or unknown disables
+ * generation with a `HolidayMessageGenerationError`.
+ */
+async function modelFromEnv(): Promise<LanguageModel> {
+  const setting = process.env.AI_HOLIDAY_MESSAGE_MODEL;
+  if (!setting) {
+    throw new HolidayMessageGenerationError(
+      "AI_HOLIDAY_MESSAGE_MODEL not set — AI generation is disabled",
+    );
   }
+  const [providerName, modelId] = setting.split(/:(.*)/s);
+  const provider = Object.hasOwn(PROVIDERS, providerName)
+    ? PROVIDERS[providerName as keyof typeof PROVIDERS]
+    : undefined;
+  if (!provider || !modelId) {
+    throw new HolidayMessageGenerationError(
+      `AI_HOLIDAY_MESSAGE_MODEL must be provider:model, with provider one of ${Object.keys(PROVIDERS).join(", ")}`,
+    );
+  }
+  const apiKey = process.env[provider.keyVar];
+  if (!apiKey) {
+    throw new HolidayMessageGenerationError(
+      `${provider.keyVar} not set — AI generation is disabled`,
+    );
+  }
+  return provider.model(apiKey, modelId);
+}
 
-  return { en: result.en.trim(), sr: result.sr.trim(), hu: result.hu.trim() };
+type GenerateHolidayMessagesOptions = {
+  /** A model to use instead of the one the environment configures (tests). */
+  model?: LanguageModel;
+};
+
+export async function generateHolidayMessages(
+  instruction: string,
+  nextCycleStartDate: Date,
+  { model }: GenerateHolidayMessagesOptions = {},
+): Promise<GenerateHolidayMessageResult> {
+  const resolvedModel = model ?? (await modelFromEnv());
+
+  // Loaded lazily rather than at module scope — this whole SDK graph would
+  // otherwise sit resident in memory for the process's entire lifetime even
+  // though this function is only invoked a handful of times a month.
+  const { generateText, Output } = await import("ai");
+
+  try {
+    const { output } = await generateText({
+      model: resolvedModel,
+      instructions: INSTRUCTIONS,
+      prompt: `Baker's description: "${instruction}"\n\nThe next order window opens on: ${formatDate(nextCycleStartDate)}`,
+      output: Output.object({ schema: holidayMessagesSchema, name: "holiday_message" }),
+      // The baker's text stays out of OpenAI's storage and the dashboard's Logs;
+      // a three-sentence announcement needs little reasoning. Other providers
+      // ignore options keyed to OpenAI.
+      providerOptions: { openai: { store: false, reasoningEffort: "low" } },
+    });
+    return output;
+  } catch (error) {
+    const status = (error as { statusCode?: number }).statusCode;
+    console.error(
+      `[ai] holiday message generation failed: ${(error as Error).name}${status ? ` (${status})` : ""}`,
+    );
+    // Provider errors and unparseable output both become a 502. The message is
+    // generic on purpose: the SDK's may quote the baker's text or the response.
+    throw new HolidayMessageGenerationError(
+      "AI generation failed — try again or write the message manually",
+      {
+        cause: error,
+      },
+    );
+  }
 }

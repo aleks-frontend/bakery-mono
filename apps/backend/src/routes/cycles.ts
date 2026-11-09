@@ -94,8 +94,8 @@ cyclesRouter.post("/", async (req, res) => {
   res.status(201).json({ cycle, repeatingOrdersCloned });
 });
 
-// Pure generation step for the Close Ordering modal's holiday-message
-// textareas — doesn't touch the DB, the admin still has to hit Close Ordering
+// Pure generation step for the Close Ordering / Edit Holiday Message modals'
+// holiday-message fields — doesn't touch the DB; the admin still has to save
 // to persist whatever ends up in the three fields (AI-generated or hand-edited).
 cyclesRouter.post("/generate-holiday-message", async (req, res) => {
   const parsed = generateHolidayMessageRequestSchema.safeParse(req.body);
