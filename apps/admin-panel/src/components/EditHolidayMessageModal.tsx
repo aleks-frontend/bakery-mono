@@ -31,6 +31,10 @@ export function EditHolidayMessageModal({ open, onOpenChange, cycle }: EditHolid
   const isBusy = updateMutation.isPending || isGenerating
 
   const [messages, setMessages] = useState(emptyHolidayMessages)
+  // A saved message opens straight into Manual for a quick fix; otherwise AI.
+  const hasSavedMessage = [cycle.holidayMessageEn, cycle.holidayMessageSr, cycle.holidayMessageHu].some(
+    (message) => Boolean(message?.trim())
+  )
 
   // Re-seed from the cycle every time the dialog opens, so a cancelled edit
   // never leaks into the next open.
@@ -58,8 +62,9 @@ export function EditHolidayMessageModal({ open, onOpenChange, cycle }: EditHolid
     )
   }
 
+  // Escape/overlay can't close it mid-request: unmounting would drop the suggestion.
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(next) => { if (!isBusy) onOpenChange(next) }}>
       <DialogContent className="max-w-xl">
         <DialogHeader className="pr-10">
           <DialogTitle>{t("Edit Holiday Message")}</DialogTitle>
@@ -73,6 +78,7 @@ export function EditHolidayMessageModal({ open, onOpenChange, cycle }: EditHolid
             value={messages}
             onChange={setMessages}
             nextCycleStartDate={cycle.nextCycleStartDate}
+            defaultMode={hasSavedMessage ? "manual" : "ai"}
             disabled={updateMutation.isPending}
           />
         </form>

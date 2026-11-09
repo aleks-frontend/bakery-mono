@@ -15,6 +15,8 @@ import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
 import { useNextCycleStartSuggestionQuery } from "@/hooks/useNextCycleStartSuggestionQuery"
 import { useCloseCycleMutation } from "@/hooks/useCloseCycleMutation"
+import { useIsMutating } from "@tanstack/react-query"
+import { generateHolidayMessageMutationKey } from "@/hooks/useGenerateHolidayMessageMutation"
 import { HolidayMessageEditor, type HolidayMessages } from "@/components/HolidayMessageEditor"
 
 const emptyHolidayMessages: HolidayMessages = { en: "", sr: "", hu: "" }
@@ -51,6 +53,10 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
   const { t } = useTranslation()
   const { data: suggestion, isLoading: suggestionLoading } = useNextCycleStartSuggestionQuery(open)
   const closeMutation = useCloseCycleMutation()
+  const isGenerating = useIsMutating({ mutationKey: generateHolidayMessageMutationKey }) > 0
+  // Locked while closing or generating: closing mid-generation would drop the
+  // suggestion, and the date is what the suggestion is written for.
+  const isBusy = closeMutation.isPending || isGenerating
 
   const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -115,7 +121,7 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(next) => { if (!isBusy) onOpenChange(next) }}>
       <DialogContent className="max-w-xl">
         <DialogHeader className="pr-10">
           <DialogTitle>{t("Confirm Close Ordering")}</DialogTitle>
@@ -139,6 +145,7 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
                 className={cn("mt-1 bg-white", errors.nextCycleStartDate && "border-destructive")}
                 type="date"
                 value={form.nextCycleStartDate}
+                disabled={isBusy}
                 onChange={(e) => setField("nextCycleStartDate", e.target.value)}
               />
               {errors.nextCycleStartDate && (
@@ -155,6 +162,7 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
                 <Switch
                   id="holiday-message-toggle"
                   checked={holidayMessageEnabled}
+                  disabled={isBusy}
                   onCheckedChange={handleHolidayMessageToggle}
                 />
               </div>
@@ -171,6 +179,8 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
                     nextCycleStartDate={
                       form.nextCycleStartDate ? fromDateInputValue(form.nextCycleStartDate) : null
                     }
+                    defaultMode="ai"
+                    disabled={closeMutation.isPending}
                   />
                 </>
               )}
@@ -179,12 +189,12 @@ export function CloseCycleModal({ open, onOpenChange, cycleId, cycleLabel }: Clo
         )}
 
         <DialogFooter className="gap-2 mt-2 border-t pt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={closeMutation.isPending}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isBusy}>
             {t("Cancel")}
           </Button>
           <Button
             variant="default"
-            disabled={closeMutation.isPending || suggestionLoading}
+            disabled={isBusy || suggestionLoading}
             onClick={handleSubmit}
           >
             {closeMutation.isPending ? (
