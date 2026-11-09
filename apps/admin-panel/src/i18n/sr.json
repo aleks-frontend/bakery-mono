@@ -206,6 +206,7 @@
   "Not saved until you use it.": "Ne čuva se dok ga ne iskoristite.",
   "Use this message": "Iskoristi ovu poruku",
   "This is the message that gets saved.": "Ova poruka će biti sačuvana.",
+  "Reopening date changed, regenerate the message.": "Datum ponovnog otvaranja je promenjen, generišite poruku ponovo.",
   "Loading...": "Učitavanje...",
   "Error loading cycles": "Greška pri učitavanju ciklusa",
   "Open": "Otvoren",

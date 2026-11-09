@@ -206,6 +206,7 @@
   "Not saved until you use it.": "Not saved until you use it.",
   "Use this message": "Use this message",
   "This is the message that gets saved.": "This is the message that gets saved.",
+  "Reopening date changed, regenerate the message.": "Reopening date changed, regenerate the message.",
   "Loading...": "Loading...",
   "Error loading cycles": "Error loading cycles",
   "Open": "Open",

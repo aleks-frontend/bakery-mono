@@ -27,6 +27,12 @@ interface HolidayMessageEditorProps {
   disabled?: boolean
 }
 
+/** A generated suggestion and the reopening date it announces. */
+interface Suggestion {
+  messages: HolidayMessages
+  generatedFor: Date
+}
+
 const textareaClassName =
   "mt-1 block w-full border border-input rounded-md px-3 py-2 text-sm bg-white resize-none disabled:opacity-50 disabled:cursor-not-allowed"
 
@@ -38,6 +44,8 @@ const textareaClassName =
  * - Manual: the EN/SR/HU fields themselves.
  * The parent owns the fields and saves them. This owns the mode, instruction
  * and suggestion, which survive mode switches and reset when it remounts.
+ * A suggestion is stale once the reopening date differs from the one it was
+ * generated for, so a message announcing the wrong date can't be used.
  */
 export function HolidayMessageEditor({
   value,
@@ -50,25 +58,28 @@ export function HolidayMessageEditor({
   const generateMutation = useGenerateHolidayMessageMutation()
   const [mode, setMode] = useState(defaultMode)
   const [instruction, setInstruction] = useState("")
-  const [suggestion, setSuggestion] = useState<HolidayMessages | null>(null)
+  const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
 
   // Counted app-wide rather than from this mutation's own state, so an editor
   // remounted mid-request (Close Ordering's toggle off and on) stays locked.
   const isGenerating = useIsMutating({ mutationKey: generateHolidayMessageMutationKey }) > 0
   const isBusy = disabled || isGenerating
+  const isStale =
+    suggestion !== null && suggestion.generatedFor.getTime() !== nextCycleStartDate?.getTime()
 
   const handleGenerate = () => {
     if (!instruction.trim() || !nextCycleStartDate) return
 
+    const generatedFor = nextCycleStartDate
     generateMutation.mutate(
-      { instruction: instruction.trim(), nextCycleStartDate },
-      { onSuccess: setSuggestion }
+      { instruction: instruction.trim(), nextCycleStartDate: generatedFor },
+      { onSuccess: (messages) => setSuggestion({ messages, generatedFor }) }
     )
   }
 
   const handleUseSuggestion = () => {
-    if (!suggestion) return
-    onChange(suggestion)
+    if (!suggestion || isStale) return
+    onChange(suggestion.messages)
     setMode("manual")
   }
 
@@ -154,10 +165,13 @@ export function HolidayMessageEditor({
               {languages.map(({ key, label }) => (
                 <div key={key}>
                   <p className="text-xs font-medium text-muted-foreground">{label}</p>
-                  <p className="text-sm whitespace-pre-wrap">{suggestion[key]}</p>
+                  <p className="text-sm whitespace-pre-wrap">{suggestion.messages[key]}</p>
                 </div>
               ))}
-              <Button type="button" size="sm" disabled={isBusy} onClick={handleUseSuggestion}>
+              {isStale && (
+                <p className="text-xs text-destructive">{t("Reopening date changed, regenerate the message.")}</p>
+              )}
+              <Button type="button" size="sm" disabled={isBusy || isStale} onClick={handleUseSuggestion}>
                 {t("Use this message")}
               </Button>
             </div>
